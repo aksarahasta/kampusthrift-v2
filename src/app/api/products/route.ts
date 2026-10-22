@@ -77,9 +77,6 @@ export async function GET(request: NextRequest) {
               locationName: true,
             },
           },
-          _count: {
-            select: { review: true },
-          },
         },
         orderBy: { createdAt: 'desc' },
         skip,

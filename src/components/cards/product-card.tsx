@@ -32,9 +32,6 @@ interface ProductCardProps {
       mediaType: 'IMAGE' | 'VIDEO'
       isPrimary: boolean
     }>
-    _count?: {
-      review: number
-    }
     codZone?: {
       campusName: string
       locationName: string
