@@ -251,7 +251,7 @@ export default function AdminDashboardPage() {
                   <p className="text-2xl font-bold text-blue-900">
                     {stats.systemConfig.markupPercentage}%
                   </p>
-                  <p className="text-xs text-blue-600 mt-1">dari harga dasar ($P_{base}$)</p>
+                  <p className="text-xs text-blue-600 mt-1">dari harga dasar (P_base)</p>
                 </div>
                 <div className="bg-blue-50 p-3 rounded-lg">
                   <p className="text-sm text-blue-700">Biaya Tetap</p>

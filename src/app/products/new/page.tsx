@@ -424,7 +424,7 @@ export default function CreateProductPage() {
                       Penetapan Harga & Biaya Layanan
                     </h4>
                     <p className="text-xs text-blue-700">
-                      Platform menghitung markup transparan agar Anda menerima bersih sesuai harga dasar ($P_{'{base}'}$).
+                      Platform menghitung markup transparan agar Anda menerima bersih sesuai harga dasar (P_base).
                     </p>
                   </div>
                 </div>
@@ -449,7 +449,7 @@ export default function CreateProductPage() {
                 {priceDetails && (
                   <div className="bg-white p-3 rounded-md border border-blue-200 space-y-2 text-xs">
                     <div className="flex justify-between text-slate-600">
-                      <span>Harga Diterima Penjual ($P_{'{base}'}$):</span>
+                      <span>Harga Diterima Penjual (P_base):</span>
                       <span className="font-semibold">{formatRupiah(priceDetails.basePrice)}</span>
                     </div>
                     <div className="flex justify-between text-slate-600">
@@ -461,7 +461,7 @@ export default function CreateProductPage() {
                       </span>
                     </div>
                     <div className="border-t pt-2 flex justify-between text-sm font-bold text-blue-900">
-                      <span>Harga Tayang ke Pembeli ($P_{'{display}'}$):</span>
+                      <span>Harga Tayang ke Pembeli (P_display):</span>
                       <span className="text-blue-600">{formatRupiah(priceDetails.displayPrice)}</span>
                     </div>
                   </div>

@@ -137,7 +137,7 @@ export default function AdminConfigPage() {
                   Konfigurasi Markup Harga
                 </CardTitle>
                 <CardDescription>
-                  Atur formula Dynamic Price Markup Engine platform ($P_{'{display}'} = P_{'{base}'} + M_{'{admin}'}$)
+                  Atur formula Dynamic Price Markup Engine platform (P_display = P_base + M_admin)
                 </CardDescription>
               </div>
             </div>
@@ -169,7 +169,7 @@ export default function AdminConfigPage() {
                     Persentase Markup (%)
                   </Label>
                   <p className="text-xs text-slate-500">
-                    Persentase yang ditambahkan dari harga asli penjual ($P_{'{base}'}$)
+                    Persentase yang ditambahkan dari harga asli penjual (P_base)
                   </p>
                   <div className="relative mt-2">
                     <Input
@@ -228,7 +228,7 @@ export default function AdminConfigPage() {
 
                 <div className="flex items-center gap-3">
                   <Label htmlFor="testBase" className="text-xs shrink-0 text-slate-700">
-                    Harga Uji Coba ($P_{'{base}'}$):
+                    Harga Uji Coba (P_base):
                   </Label>
                   <Input
                     id="testBase"
@@ -250,7 +250,7 @@ export default function AdminConfigPage() {
                     <span className="font-semibold text-amber-600">+ {formatRupiah(simMarkupAmount)}</span>
                   </div>
                   <div className="border-t pt-1.5 flex justify-between font-bold text-blue-900 text-sm">
-                    <span>Harga Tayang ke Pembeli ($P_{'{display}'}$):</span>
+                    <span>Harga Tayang ke Pembeli (P_display):</span>
                     <span className="text-blue-600">{formatRupiah(simDisplayPrice)}</span>
                   </div>
                 </div>
