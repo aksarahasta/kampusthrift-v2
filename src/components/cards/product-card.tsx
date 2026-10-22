@@ -130,7 +130,6 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
             <HonestyScore
               score={product.seller.honestyScore}
-              reviewCount={product._count?.review}
               size="sm"
               showCount={false}
             />
