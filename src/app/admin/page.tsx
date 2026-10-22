@@ -34,7 +34,7 @@ interface PlatformStats {
     reserved: number
     banned: number
     recent: number
-    byCategory: Array<{ category: string; _count: number }>
+    byCategory?: Array<{ category: string; _count: any }>
   }
   transactions: {
     total: number

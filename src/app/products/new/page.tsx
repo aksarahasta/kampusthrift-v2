@@ -52,6 +52,8 @@ export default function CreateProductPage() {
     basePrice: number
     markupAmount: number
     displayPrice: number
+    markupPercentage: number
+    fixedFee: number
   } | null>(null)
 
   const isVerifiedStudent = session?.user?.isVerifiedStudent ?? false
