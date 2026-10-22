@@ -86,9 +86,9 @@ interface Product {
 export default function ProductDetailPage({
   params
 }: {
-  params: Promise<{ id: string }>
+  params: { id: string }
 }) {
-  const resolvedParams = use(params)
+  const id = params.id
   const router = useRouter()
   const { data: session } = useSession()
 
@@ -106,7 +106,7 @@ export default function ProductDetailPage({
     async function fetchProduct() {
       try {
         setLoading(true)
-        const res = await fetch(`/api/products/${resolvedParams.id}`)
+        const res = await fetch(`/api/products/${id}`)
         const json = await res.json()
 
         if (!res.ok) {
@@ -122,7 +122,7 @@ export default function ProductDetailPage({
     }
 
     fetchProduct()
-  }, [resolvedParams.id])
+  }, [id])
 
   const handleWhatsAppContact = () => {
     if (!product) return

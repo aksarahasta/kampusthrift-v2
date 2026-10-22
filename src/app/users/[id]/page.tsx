@@ -58,9 +58,9 @@ interface Review {
 export default function UserProfilePage({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: { id: string }
 }) {
-  const resolvedParams = use(params)
+  const id = params.id
   const router = useRouter()
 
   const [user, setUser] = useState<UserProfile | null>(null)
@@ -74,14 +74,14 @@ export default function UserProfilePage({
         setLoading(true)
 
         // Fetch user profile
-        const userRes = await fetch(`/api/users/${resolvedParams.id}`)
+        const userRes = await fetch(`/api/users/${id}`)
         const userJson = await userRes.json()
         if (userRes.ok) {
           setUser(userJson.data)
         }
 
         // Fetch reviews
-        const reviewsRes = await fetch(`/api/users/${resolvedParams.id}/reviews`)
+        const reviewsRes = await fetch(`/api/users/${id}/reviews`)
         const reviewsJson = await reviewsRes.json()
         if (reviewsRes.ok) {
           setReviews(reviewsJson.data || [])
@@ -94,7 +94,7 @@ export default function UserProfilePage({
     }
 
     fetchData()
-  }, [resolvedParams.id])
+  }, [id])
 
   if (loading) {
     return (

@@ -11,10 +11,10 @@ import { ProductStatus, Role } from '@prisma/client'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params
+    const { id } = params
 
     const product = await prisma.product.findUnique({
       where: { id, status: { not: ProductStatus.BANNED } },
@@ -75,10 +75,10 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params
+    const { id } = params
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -131,7 +131,7 @@ export async function PATCH(
 
     // Jika seller mengubah status ke SOLD, validasi hanya boleh dari ACTIVE atau RESERVED
     if (validatedData.status === ProductStatus.SOLD && isSeller) {
-      if (![ProductStatus.ACTIVE, ProductStatus.RESERVED].includes(product.status)) {
+      if (!(<ProductStatus[]>[ProductStatus.ACTIVE, ProductStatus.RESERVED]).includes(product.status)) {
         return NextResponse.json(
           { error: 'Status tidak dapat diubah ke SOLD' },
           { status: 400 }
@@ -167,10 +167,10 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params
+    const { id } = params
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json(
