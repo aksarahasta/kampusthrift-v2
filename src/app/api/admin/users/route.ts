@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Role } from '@prisma/client'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/admin/users
  * Mengambil daftar semua user dengan filter

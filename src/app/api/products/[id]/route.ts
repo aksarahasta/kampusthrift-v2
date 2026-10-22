@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { updateProductSchema } from '@/lib/validations/product'
 import { ProductStatus, Role } from '@prisma/client'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/products/[id]
  * Mengambil detail produk berdasarkan ID

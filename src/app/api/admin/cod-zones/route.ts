@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { createCodZoneSchema, updateCodZoneSchema } from '@/lib/validations/product'
 import { Role } from '@prisma/client'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/admin/cod-zones
  * Mengambil semua COD zones (termasuk yang tidak aktif)

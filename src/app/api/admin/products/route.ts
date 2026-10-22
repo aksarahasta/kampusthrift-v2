@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Role, ProductStatus } from '@prisma/client'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/admin/products
  * Mengambil daftar semua produk untuk moderasi

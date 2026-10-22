@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { systemConfigSchema } from '@/lib/validations/admin'
 import { Role } from '@prisma/client'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/admin/config
  * Mengambil konfigurasi sistem saat ini

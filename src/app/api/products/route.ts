@@ -6,6 +6,8 @@ import { createProductSchema, productFilterSchema } from '@/lib/validations/prod
 import { calculateDisplayPrice } from '@/lib/utils'
 import { ProductStatus, MediaType, Prisma } from '@prisma/client'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/products
  * Mengambil daftar produk dengan filter kategori, barter, student, radius

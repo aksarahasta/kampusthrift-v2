@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/users/[id]
  * Mengambil profil publik penjual beserta statistik dan produk aktifnya
