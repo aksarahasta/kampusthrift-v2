@@ -1,0 +1,49 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "outputDirectory": ".next",
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": {
+      "description": "Supabase project URL",
+      "value": "https://your-project.supabase.co"
+    },
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": {
+      "description": "Supabase anonymous key",
+      "value": "your-anon-key"
+    },
+    "NEXTAUTH_SECRET": {
+      "description": "NextAuth.js secret key (generate with: openssl rand -base64 32)",
+      "value": ""
+    },
+    "NEXTAUTH_URL": {
+      "description": "Base URL of your app (e.g., https://kampus-thrift.vercel.app)",
+      "value": ""
+    },
+    "DATABASE_URL": {
+      "description": "Supabase PostgreSQL connection string",
+      "value": "postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT].supabase.co:5432/postgres"
+    },
+    "ADMIN_MARKUP_PERCENTAGE": {
+      "description": "Default markup percentage (e.g., 5 for 5%)",
+      "value": "5"
+    },
+    "ADMIN_FIXED_FEE": {
+      "description": "Default fixed fee in Rupiah",
+      "value": "1000"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    }
+  ],
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ]
+}

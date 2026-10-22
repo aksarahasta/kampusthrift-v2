@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ProductStatus {
+  ACTIVE
+  RESERVED
+  SOLD
+  BANNED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum ProductCategory {
+  BUKU_KULIAH
+  ALAT_KOS_RUMAH_TANGGA
+  ELEKTRONIK
+  FASHION
+  LAIN_LAIN
+}
+
+enum OtpType {
+  STUDENT_VERIFICATION
+  LOGIN
+  PASSWORD_RESET
+}
+
+model User {
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  password          String
+  phoneWhatsapp     String    @map("phone_whatsapp")
+  campusName        String?   @map("campus_name")
+  faculty           String?
+  avatarUrl         String?   @map("avatar_url")
+  isVerifiedStudent Boolean   @default(false) @map("is_verified_student")
+  honestyScore      Float     @default(0.0) @map("honesty_score")
+  role              Role      @default(USER)
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  products          Product[]
+  reviewsGiven      Review[]  @relation("BuyerReviews")
+  reviewsReceived   Review[]  @relation("SellerReviews")
+  otpVerifications  OtpVerification[]
+
+  @@map("users")
+}
+
+model OtpVerification {
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id")
+  email     String
+  otpCode   String   @map("otp_code")
+  type      OtpType  @default(STUDENT_VERIFICATION)
+  expiresAt DateTime @map("expires_at")
+  isUsed    Boolean  @default(false) @map("is_used")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email, otpCode])
+  @@map("otp_verifications")
+}
+
+model Product {
+  id                  String          @id @default(cuid())
+  sellerId            String          @map("seller_id")
+  title               String
+  description         String
+  category            ProductCategory
+  basePrice           Int             @map("base_price")
+  displayPrice        Int             @map("display_price")
+  isBarter            Boolean         @default(false) @map("is_barter")
+  barterTarget        String?         @map("barter_target")
+  conditionPercentage Int             @map("condition_percentage")
+  campusName          String          @map("campus_name")
+  codZoneId           String          @map("cod_zone_id")
+  status              ProductStatus   @default(ACTIVE)
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+
+  seller              User            @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  codZone             CodZone         @relation(fields: [codZoneId], references: [id])
+  media               ProductMedia[]
+  review              Review?
+
+  @@index([sellerId])
+  @@index([category])
+  @@index([status])
+  @@map("products")
+}
+
+model ProductMedia {
+  id        String    @id @default(cuid())
+  productId String    @map("product_id")
+  mediaUrl  String    @map("media_url")
+  mediaType MediaType @map("media_type")
+  isPrimary Boolean   @default(false) @map("is_primary")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_media")
+}
+
+model CodZone {
+  id           String    @id @default(cuid())
+  campusName   String    @map("campus_name")
+  locationName String    @map("location_name")
+  description  String?
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  products     Product[]
+
+  @@map("cod_zones")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  productId String   @unique @map("product_id")
+  sellerId  String   @map("seller_id")
+  buyerId   String   @map("buyer_id")
+  score     Int      // 1 - 5
+  comment   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  seller    User     @relation("SellerReviews", fields: [sellerId], references: [id], onDelete: Cascade)
+  buyer     User     @relation("BuyerReviews", fields: [buyerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+  @@index([buyerId])
+  @@map("reviews")
+}
+
+model SystemConfig {
+  id               String   @id @default(cuid())
+  markupPercentage Float    @default(5.0) @map("markup_percentage")
+  fixedFee         Int      @default(1000) @map("fixed_fee")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("system_configs")
+}
