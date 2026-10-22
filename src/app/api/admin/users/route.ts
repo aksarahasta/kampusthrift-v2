@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
       role: Role.USER,
       ...(search && {
         OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search, mode: 'insensitive' as const } },
+          { email: { contains: search, mode: 'insensitive' as const } },
         ],
       }),
     }

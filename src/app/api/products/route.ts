@@ -41,11 +41,11 @@ export async function GET(request: NextRequest) {
       ...(filters.conditionMin !== undefined && { conditionPercentage: { gte: filters.conditionMin } }),
       ...(filters.conditionMax !== undefined && { conditionPercentage: { lte: filters.conditionMax } }),
       ...(filters.isBarter !== undefined && { isBarter: filters.isBarter }),
-      ...(filters.campusName && { campusName: { contains: filters.campusName, mode: 'insensitive' } }),
+      ...(filters.campusName && { campusName: { contains: filters.campusName, mode: 'insensitive' as const } }),
       ...(search && {
         OR: [
-          { title: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
+          { title: { contains: search, mode: 'insensitive' as const } },
+          { description: { contains: search, mode: 'insensitive' as const } },
         ],
       }),
       // Filter by verified student only

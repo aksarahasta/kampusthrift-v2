@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const codZones = await prisma.codZone.findMany({
       where: {
         isActive: true,
-        ...(campus ? { campusName: { contains: campus, mode: 'insensitive' } } : {}),
+        ...(campus ? { campusName: { contains: campus, mode: 'insensitive' as const } } : {}),
       },
       orderBy: [
         { campusName: 'asc' },
