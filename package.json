@@ -17,7 +17,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "@prisma/client": "^5.20.0",
-    "next-auth": "^4.24.8",
+    "next-auth": "4.24.8",
     "bcryptjs": "^2.4.3",
     "zod": "^3.23.8",
     "react-hook-form": "^7.53.0",
@@ -38,14 +38,14 @@
     "@radix-ui/react-slider": "^1.2.1",
     "@supabase/supabase-js": "^2.45.4",
     "@supabase/auth-helpers-nextjs": "^0.10.2",
-    "nodemailer": "^6.9.15"
+    "nodemailer": "^7.0.7"
   },
   "devDependencies": {
     "@types/node": "^22.7.5",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
     "@types/bcryptjs": "^2.4.6",
-    "@types/nodemailer": "^6.4.16",
+    "@types/nodemailer": "^7.0.0",
     "typescript": "^5.6.3",
     "prisma": "^5.20.0",
     "tsx": "^4.19.1",
