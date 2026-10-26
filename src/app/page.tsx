@@ -1,8 +1,9 @@
 import Link from 'next/link'
+import { prisma } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { ProductCard } from '@/components/cards/product-card'
 import {
-  ShoppingCart,
   MapPin,
   ShieldCheck,
   GraduationCap,
@@ -10,265 +11,262 @@ import {
   Star,
   ArrowRight,
   Camera,
-  MessageCircle
+  ShoppingBag,
+  Search,
+  Sparkles,
+  BookOpen,
+  Home,
+  Laptop,
+  Shirt,
+  Package
 } from 'lucide-react'
+import { ProductStatus } from '@prisma/client'
 
-export default function HomePage() {
+export const dynamic = 'force-dynamic'
+
+const CATEGORIES = [
+  { label: 'Buku Kuliah', value: 'BUKU_KULIAH', icon: BookOpen, color: 'text-blue-600 bg-blue-50 border-blue-200' },
+  { label: 'Alat Kos & RT', value: 'ALAT_KOS_RUMAH_TANGGA', icon: Home, color: 'text-amber-600 bg-amber-50 border-amber-200' },
+  { label: 'Elektronik', value: 'ELEKTRONIK', icon: Laptop, color: 'text-purple-600 bg-purple-50 border-purple-200' },
+  { label: 'Fashion', value: 'FASHION', icon: Shirt, color: 'text-rose-600 bg-rose-50 border-rose-200' },
+  { label: 'Lain-lain', value: 'LAIN_LAIN', icon: Package, color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
+]
+
+export default async function HomePage() {
+  // Ambil produk terbaru yang sedang aktif
+  const recentProducts = await prisma.product.findMany({
+    where: { status: ProductStatus.ACTIVE },
+    include: {
+      seller: {
+        select: {
+          id: true,
+          name: true,
+          isVerifiedStudent: true,
+          honestyScore: true,
+          campusName: true,
+        },
+      },
+      media: {
+        orderBy: { isPrimary: 'desc' },
+        take: 2,
+      },
+      codZone: {
+        select: {
+          campusName: true,
+          locationName: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 8,
+  }).catch(() => [])
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">KT</span>
-            </div>
-            <span className="font-bold text-xl text-slate-800">Kampus Thrift</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/products">
-              <Button variant="ghost" size="sm">Katalog</Button>
-            </Link>
-            <Link href="/products/new">
-              <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50">
-                + Jual Barang
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button variant="ghost" size="sm">Masuk</Button>
-            </Link>
-            <Link href="/register">
-              <Button size="sm">Daftar</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-gradient-to-b from-blue-50/50 via-white to-slate-50">
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16 md:py-24 text-center">
-        <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium mb-6">
+      <section className="container mx-auto px-4 pt-10 pb-12 md:pt-16 md:pb-16 text-center max-w-4xl">
+        <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3.5 py-1.5 rounded-full text-xs font-semibold mb-6 shadow-sm">
           <MapPin size={14} />
-          Hyperlocal Marketplace untuk Mahasiswa
+          Hyperlocal Marketplace 1–5 km Sekitar Kampus
         </div>
 
-        <h1 className="text-4xl md:text-6xl font-bold text-slate-900 mb-6 leading-tight">
+        <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-slate-900 mb-5 leading-tight tracking-tight">
           Jual Beli & Barter<br />
-          <span className="text-blue-600">Barang Preloved</span> di Kampusmu
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+            Barang Preloved
+          </span> di Kampusmu
         </h1>
 
-        <p className="text-lg md:text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
-          Transaksi aman tanpa ongkir dengan sistem COD di titik temu kampus.
-          Bergabung dengan komunitas mahasiswa hemat dan eco-friendly.
+        <p className="text-base sm:text-lg text-slate-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+          Temukan buku kuliah, alat kos, elektronik, hingga pakaian bekas berkualitas.
+          Transaksi aman Rp0 ongkir dengan sistem COD di Safe Zone kampus.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link href="/register">
-            <Button size="lg" className="gap-2">
-              Mulai Jual/Beli
-              <ArrowRight size={18} />
+        {/* Quick Search Form */}
+        <form action="/products" method="GET" className="max-w-xl mx-auto mb-8">
+          <div className="relative flex items-center shadow-lg rounded-2xl overflow-hidden border-2 border-blue-500/30 bg-white focus-within:border-blue-600 transition-all">
+            <Search className="absolute left-4 text-slate-400" size={20} />
+            <input
+              type="text"
+              name="search"
+              placeholder="Cari buku kalkulus, rice cooker, kipas angin..."
+              className="w-full py-3.5 pl-12 pr-28 text-sm outline-none text-slate-800 placeholder:text-slate-400"
+            />
+            <Button
+              type="submit"
+              size="sm"
+              className="absolute right-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-5 h-9 font-medium"
+            >
+              Cari
+            </Button>
+          </div>
+        </form>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Link href="/products">
+            <Button size="lg" className="rounded-xl shadow-md shadow-blue-600/20 gap-2">
+              <ShoppingBag size={18} />
+              Jelajahi Katalog Lengkap
             </Button>
           </Link>
-          <Link href="#features">
-            <Button variant="outline" size="lg">
-              Pelajari Lebih Lanjut
+          <Link href="/products/new">
+            <Button variant="outline" size="lg" className="rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50">
+              + Jual Barang Preloved
             </Button>
           </Link>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mt-12 max-w-xl mx-auto">
+        {/* Stats Row */}
+        <div className="grid grid-cols-3 gap-4 mt-12 max-w-lg mx-auto bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-slate-200 shadow-sm">
           <div className="text-center">
-            <div className="text-2xl md:text-3xl font-bold text-blue-600">1-5 km</div>
-            <div className="text-sm text-slate-500">Radius Jangkauan</div>
+            <div className="text-xl sm:text-2xl font-bold text-blue-600">1-5 km</div>
+            <div className="text-[11px] sm:text-xs text-slate-500">Radius Kampus</div>
+          </div>
+          <div className="text-center border-x border-slate-200">
+            <div className="text-xl sm:text-2xl font-bold text-emerald-600">Rp 0</div>
+            <div className="text-[11px] sm:text-xs text-slate-500">Ongkos Kirim COD</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl md:text-3xl font-bold text-blue-600">Rp 0</div>
-            <div className="text-sm text-slate-500">Ongkos Kirim</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl md:text-3xl font-bold text-blue-600">100%</div>
-            <div className="text-sm text-slate-500">Transparan</div>
+            <div className="text-xl sm:text-2xl font-bold text-purple-600">100%</div>
+            <div className="text-[11px] sm:text-xs text-slate-500">Video Kondisi Riil</div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">
-              Mengapa Kampus Thrift?
+      {/* Categories Bar */}
+      <section className="container mx-auto px-4 py-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <Sparkles size={18} className="text-blue-600" />
+            Kategori Pilihan
+          </h2>
+          <Link href="/products" className="text-xs font-semibold text-blue-600 hover:underline">
+            Semua Kategori →
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          {CATEGORIES.map((cat) => {
+            const Icon = cat.icon
+            return (
+              <Link
+                key={cat.value}
+                href={`/products?category=${cat.value}`}
+                className="flex items-center gap-3 p-3.5 rounded-xl border bg-white hover:shadow-md transition-all hover:border-blue-400 group"
+              >
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center border shrink-0 ${cat.color} group-hover:scale-105 transition-transform`}>
+                  <Icon size={20} />
+                </div>
+                <div className="truncate">
+                  <p className="text-xs font-semibold text-slate-800 truncate group-hover:text-blue-600">
+                    {cat.label}
+                  </p>
+                  <p className="text-[10px] text-slate-400">Lihat barang</p>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* Featured Products Section */}
+      <section className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+              Barang Preloved Terbaru
             </h2>
-            <p className="text-slate-600 max-w-2xl mx-auto">
-              Platform marketplace yang dirancang khusus untuk ekosistem kampus dengan fitur-fitur unggulan
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              Barang bekas mahasiswa siap COD hari ini dengan video bukti kondisi
+            </p>
+          </div>
+          <Link href="/products">
+            <Button variant="ghost" size="sm" className="text-blue-600 gap-1 font-semibold text-xs sm:text-sm">
+              Lihat Semua
+              <ArrowRight size={15} />
+            </Button>
+          </Link>
+        </div>
+
+        {recentProducts.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {recentProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 px-4 bg-white rounded-2xl border border-dashed border-slate-300">
+            <ShoppingBag className="mx-auto text-slate-300 mb-3" size={48} />
+            <h3 className="text-base font-semibold text-slate-700 mb-1">
+              Belum ada produk yang tayang
+            </h3>
+            <p className="text-xs text-slate-500 mb-4 max-w-sm mx-auto">
+              Jadilah yang pertama menjual buku, barang kos, atau pakaian preloved Anda di kampus!
+            </p>
+            <Link href="/products/new">
+              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                + Pasang Iklan Sekarang
+              </Button>
+            </Link>
+          </div>
+        )}
+      </section>
+
+      {/* Why Kampus Thrift (Value Proposition) */}
+      <section className="container mx-auto px-4 py-12 my-6">
+        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl text-white p-8 sm:p-12 shadow-xl">
+          <div className="max-w-2xl">
+            <span className="text-xs font-bold uppercase tracking-wider text-blue-200">
+              Keunggulan Kampus Thrift
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold mt-2 mb-4 leading-snug">
+              Belanja Preloved Kampus Tanpa Ragu & Bebas Tipu-Tipu
+            </h2>
+            <p className="text-sm text-blue-100 mb-8 leading-relaxed">
+              Dibuat khusus untuk ekosistem mahasiswa dengan sistem verifikasi email kampus (.ac.id), video bukti kondisi fisik, dan COD di safe zone kampus.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Feature 1 */}
-            <Card className="border-slate-200 hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                  <Camera className="text-blue-600" size={24} />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">Video Bukti Kondisi</h3>
-                <p className="text-slate-600 text-sm">
-                  Penjual wajib unggah video kondisi barang asli. Tidak ada lagi kejutan barang tidak sesuai foto.
+          <div className="grid sm:grid-cols-3 gap-6 pt-4 border-t border-white/20">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                <Camera size={20} className="text-white" />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm">Wajib Video Kondisi</h4>
+                <p className="text-xs text-blue-100 mt-1">
+                  Semua barang wajib menyertakan video 5–60 detik agar tidak ada cacat yang disembunyikan.
                 </p>
-              </CardContent>
-            </Card>
-
-            {/* Feature 2 */}
-            <Card className="border-slate-200 hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6">
-                <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
-                  <MapPin className="text-emerald-600" size={24} />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">COD Safe Zone</h3>
-                <p className="text-slate-600 text-sm">
-                  Titik temu aman di area kampus. Transaksi tunai/QRIS tanpa ongkos kirim dan repot packing.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Feature 3 */}
-            <Card className="border-slate-200 hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6">
-                <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center mb-4">
-                  <Star className="text-amber-600" size={24} />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">Honesty Score</h3>
-                <p className="text-slate-600 text-sm">
-                  Sistem rating kejujuran penjual berdasarkan keakuratan deskripsi barang. Cari penjual terpercaya.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Feature 4 */}
-            <Card className="border-slate-200 hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                  <GraduationCap className="text-purple-600" size={24} />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">Verified Student</h3>
-                <p className="text-slate-600 text-sm">
-                  Verifikasi email kampus (.ac.id) untuk mendapat badge resmi dan akses fitur barter eksklusif.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Feature 5 */}
-            <Card className="border-slate-200 hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6">
-                <div className="w-12 h-12 bg-rose-100 rounded-lg flex items-center justify-center mb-4">
-                  <RefreshCw className="text-rose-600" size={24} />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">Fitur Barter</h3>
-                <p className="text-slate-600 text-sm">
-                  Tukar-menukar barang preloved dengan mahasiswa lain. Hemat dan sustainable!
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Feature 6 */}
-            <Card className="border-slate-200 hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6">
-                <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center mb-4">
-                  <MessageCircle className="text-cyan-600" size={24} />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">WhatsApp Integration</h3>
-                <p className="text-slate-600 text-sm">
-                  Hubungi penjual langsung via WhatsApp dengan pesan otomatis. Transaksi lebih cepat dan personal.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="py-16 bg-slate-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">
-              Cara Kerja
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Buyer Flow */}
-            <div>
-              <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                <ShoppingCart size={20} className="text-blue-600" />
-                Untuk Pembeli
-              </h3>
-              <div className="space-y-4">
-                {[
-                  { step: 1, text: 'Cari barang di katalog dengan filter radius' },
-                  { step: 2, text: 'Cek video kondisi dan honesty score penjual' },
-                  { step: 3, text: 'Hubungi via WhatsApp & pilih COD spot' },
-                  { step: 4, text: 'Transaksi langsung & beri rating' },
-                ].map((item) => (
-                  <div key={item.step} className="flex gap-3">
-                    <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-semibold shrink-0">
-                      {item.step}
-                    </div>
-                    <p className="text-slate-600 text-sm pt-0.5">{item.text}</p>
-                  </div>
-                ))}
               </div>
             </div>
 
-            {/* Seller Flow */}
-            <div>
-              <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                <ShieldCheck size={20} className="text-emerald-600" />
-                Untuk Penjual
-              </h3>
-              <div className="space-y-4">
-                {[
-                  { step: 1, text: 'Daftar akun & verifikasi email kampus' },
-                  { step: 2, text: 'Upload barang dengan foto & video wajib' },
-                  { step: 3, text: 'Tentukan harga atau opsi barter' },
-                  { step: 4, text: 'Temui pembeli di COD spot & terima pembayaran' },
-                ].map((item) => (
-                  <div key={item.step} className="flex gap-3">
-                    <div className="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm font-semibold shrink-0">
-                      {item.step}
-                    </div>
-                    <p className="text-slate-600 text-sm pt-0.5">{item.text}</p>
-                  </div>
-                ))}
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                <RefreshCw size={20} className="text-white" />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm">Fitur Tukar Tambah (Barter)</h4>
+                <p className="text-xs text-blue-100 mt-1">
+                  Khusus mahasiswa terverifikasi (.ac.id) bisa saling tukar buku atau barang tanpa uang tunai.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                <ShieldCheck size={20} className="text-white" />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm">COD Safe Zone Rp0</h4>
+                <p className="text-xs text-blue-100 mt-1">
+                  Titik temu aman di perpustakaan atau pos kampus tanpa resiko dan tanpa ongkir kurir.
+                </p>
               </div>
             </div>
           </div>
         </div>
       </section>
-
-      {/* CTA Section */}
-      <section className="py-16 bg-blue-600">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Siap Bertransaksi di Kampus Thrift?
-          </h2>
-          <p className="text-blue-100 mb-8 max-w-xl mx-auto">
-            Bergabung dengan komunitas mahasiswa hemat dan mulai jual beli barang preloved hari ini.
-          </p>
-          <Link href="/register">
-            <Button size="lg" variant="secondary" className="gap-2">
-              Daftar Sekarang — Gratis!
-              <ArrowRight size={18} />
-            </Button>
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t bg-white py-8">
-        <div className="container mx-auto px-4 text-center text-sm text-slate-500">
-          <p>© 2026 Kampus Thrift. Hyperlocal C2C Preloved Marketplace.</p>
-        </div>
-      </footer>
     </div>
   )
 }

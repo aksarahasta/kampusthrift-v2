@@ -29,6 +29,7 @@ export async function GET(
             honestyScore: true,
             campusName: true,
             faculty: true,
+            phoneWhatsapp: true,
           },
         },
         media: true,

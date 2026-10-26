@@ -80,10 +80,19 @@ export function generateWhatsAppLink(
   displayPrice: number,
   codZoneName: string
 ): string {
-  const message = `Halo ${sellerName}, saya tertarik membeli ${productTitle} seharga ${formatRupiah(displayPrice)}. Apakah bisa COD di ${codZoneName}?`
+  // Bersihkan karakter non-digit
+  let cleanPhone = (phoneNumber || '').replace(/\D/g, '')
+
+  // Konversi otomatis format Indonesia 08xx -> 628xx
+  if (cleanPhone.startsWith('0')) {
+    cleanPhone = '62' + cleanPhone.slice(1)
+  } else if (!cleanPhone.startsWith('62') && cleanPhone.length > 0) {
+    cleanPhone = '62' + cleanPhone
+  }
+
+  const message = `Halo ${sellerName}, saya melihat barang Anda di Kampus Thrift:\n\n📦 *${productTitle}*\n💰 Harga: *${formatRupiah(displayPrice)}*\n📍 Titik COD: *${codZoneName}*\n\nApakah barang ini masih tersedia dan bisa COD di ${codZoneName}? Terima kasih!`
   const encodedMessage = encodeURIComponent(message)
-  // Remove any non-numeric characters from phone number
-  const cleanPhone = phoneNumber.replace(/\D/g, '')
+
   return `https://wa.me/${cleanPhone}?text=${encodedMessage}`
 }
 

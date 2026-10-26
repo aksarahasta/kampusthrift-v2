@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useForm } from 'react-hook-form'
@@ -21,7 +21,9 @@ import {
   AlertCircle,
   CheckCircle2,
   HelpCircle,
-  ArrowLeft
+  ArrowLeft,
+  UploadCloud,
+  X
 } from 'lucide-react'
 import { formatRupiah } from '@/lib/utils'
 import { ProductCategory } from '@prisma/client'
@@ -30,22 +32,41 @@ interface CodZone {
   id: string
   campusName: string
   locationName: string
-  description?: string
+  description?: string | null
 }
 
-export default function CreateProductPage() {
+const UNNES_DEFAULT_ZONES: CodZone[] = [
+  { id: 'ft-unnes', campusName: 'Universitas Negeri Semarang (UNNES)', locationName: 'Fakultas Teknik (FT)' },
+  { id: 'fik-unnes', campusName: 'Universitas Negeri Semarang (UNNES)', locationName: 'Fakultas Ilmu Keolahragaan (FIK)' },
+  { id: 'fh-unnes', campusName: 'Universitas Negeri Semarang (UNNES)', locationName: 'Fakultas Hukum (FH)' },
+  { id: 'fisip-unnes', campusName: 'Universitas Negeri Semarang (UNNES)', locationName: 'Fakultas Ilmu Sosial dan Ilmu Politik (FISIP)' },
+  { id: 'fipp-unnes', campusName: 'Universitas Negeri Semarang (UNNES)', locationName: 'Fakultas Ilmu Pendidikan dan Psikologi (FIPP)' },
+  { id: 'fmipa-unnes', campusName: 'Universitas Negeri Semarang (UNNES)', locationName: 'Fakultas Matematika dan Ilmu Pengetahuan Alam (FMIPA)' },
+  { id: 'fbs-unnes', campusName: 'Universitas Negeri Semarang (UNNES)', locationName: 'Fakultas Bahasa dan Seni (FBS)' },
+]
+
+const FALLBACK_CAMPUSES = [
+  'Universitas Negeri Semarang (UNNES)',
+]
+
+export default function NewProductPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
 
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [codZones, setCodZones] = useState<CodZone[]>([])
-  const [selectedCampus, setSelectedCampus] = useState('')
+  const [codZones, setCodZones] = useState<CodZone[]>(UNNES_DEFAULT_ZONES)
+  const [selectedCampus, setSelectedCampus] = useState('Universitas Negeri Semarang (UNNES)')
 
   // Media files states (minimal 1 Foto & 1 Video)
   const [images, setImages] = useState<string[]>([])
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
-  const [uploadingMedia, setUploadingMedia] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [uploadingVideo, setUploadingVideo] = useState(false)
+
+  // File input refs
+  const imageInputRef = useRef<HTMLInputElement | null>(null)
+  const videoInputRef = useRef<HTMLInputElement | null>(null)
 
   // Price markup calculations state
   const [priceDetails, setPriceDetails] = useState<{
@@ -67,6 +88,8 @@ export default function CreateProductPage() {
   } = useForm<CreateProductInput>({
     resolver: zodResolver(createProductSchema),
     defaultValues: {
+      campusName: 'Universitas Negeri Semarang (UNNES)',
+      codZoneId: UNNES_DEFAULT_ZONES[0].id,
       conditionPercentage: 85,
       isBarter: false,
     },
@@ -76,19 +99,20 @@ export default function CreateProductPage() {
   const watchIsBarter = watch('isBarter')
   const watchCondition = watch('conditionPercentage')
 
-  // Ambil daftar COD Zones
+  // Ambil daftar COD Zones dari server (jika ada data dari DB)
   useEffect(() => {
     async function loadCodZones() {
       try {
         const res = await fetch('/api/cod-zones')
         const json = await res.json()
-        if (res.ok) {
-          setCodZones(json.data || [])
-          if (json.data && json.data.length > 0) {
-            setSelectedCampus(json.data[0].campusName)
-            setValue('campusName', json.data[0].campusName)
-            setValue('codZoneId', json.data[0].id)
-          }
+        if (res.ok && json.data && json.data.length > 0) {
+          // Ambil hanya zona UNNES
+          const unnesData = json.data.filter((z: CodZone) => z.campusName.includes('UNNES'))
+          const finalData = unnesData.length > 0 ? unnesData : UNNES_DEFAULT_ZONES
+          setCodZones(finalData)
+          setSelectedCampus('Universitas Negeri Semarang (UNNES)')
+          setValue('campusName', 'Universitas Negeri Semarang (UNNES)')
+          setValue('codZoneId', finalData[0].id)
         }
       } catch (err) {
         console.error('Failed to load COD zones', err)
@@ -127,36 +151,109 @@ export default function CreateProductPage() {
     return () => clearTimeout(timer)
   }, [watchBasePrice])
 
-  // Filter COD zones berdasarkan kampus yang dipilih
-  const filteredCodZones = codZones.filter(
-    (z) => !selectedCampus || z.campusName.toLowerCase() === selectedCampus.toLowerCase()
-  )
+  // Real Upload Handler untuk Foto
+  const handleImageFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
 
-  const campuses = Array.from(new Set(codZones.map((z) => z.campusName)))
+    const file = files[0]
+    if (images.length >= 5) {
+      setErrorMessage('Maksimal 5 foto per listing')
+      return
+    }
 
-  // Mock Upload Handler (simulasi upload foto/video)
-  const handleFileUpload = (type: 'IMAGE' | 'VIDEO') => {
-    setUploadingMedia(true)
-    setTimeout(() => {
-      if (type === 'IMAGE') {
-        const mockImg = `https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=800`
-        setImages((prev) => [...prev, mockImg])
-      } else {
-        const mockVideo = `https://assets.mixkit.co/videos/preview/mixkit-close-up-of-a-person-typing-on-a-laptop-42994-large.mp4`
-        setVideoUrl(mockVideo)
+    try {
+      setUploadingImage(true)
+      setErrorMessage(null)
+
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'IMAGE')
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const json = await res.json()
+      if (!res.ok) {
+        throw new Error(json.error || 'Gagal mengunggah foto')
       }
-      setUploadingMedia(false)
-    }, 1000)
+
+      setImages((prev) => [...prev, json.data.mediaUrl])
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Gagal mengunggah foto')
+    } finally {
+      setUploadingImage(false)
+      if (imageInputRef.current) imageInputRef.current.value = ''
+    }
   }
 
+  // Real Upload Handler untuk Video
+  const handleVideoFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    const file = files[0]
+
+    // Cek ukuran video lokal sebelum upload (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      setErrorMessage('Ukuran file video maksimal 50MB')
+      return
+    }
+
+    try {
+      setUploadingVideo(true)
+      setErrorMessage(null)
+
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', 'VIDEO')
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const json = await res.json()
+      if (!res.ok) {
+        throw new Error(json.error || 'Gagal mengunggah video')
+      }
+
+      setVideoUrl(json.data.mediaUrl)
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Gagal mengunggah video')
+    } finally {
+      setUploadingVideo(false)
+      if (videoInputRef.current) videoInputRef.current.value = ''
+    }
+  }
+
+  // Filter COD zones khusus UNNES
+  const unnesZonesOnly = codZones.filter((z) => z.campusName.includes('UNNES'))
+  const activeZones = unnesZonesOnly.length > 0 ? unnesZonesOnly : UNNES_DEFAULT_ZONES
+
+  const displayCampuses = ['Universitas Negeri Semarang (UNNES)']
+  const filteredCodZones = activeZones
+
   const onSubmit = async (data: CreateProductInput) => {
-    // Validasi Media Wajib: Min 1 Foto dan 1 Video
     if (images.length === 0) {
       setErrorMessage('Wajib mengunggah minimal 1 foto produk')
       return
     }
     if (!videoUrl) {
       setErrorMessage('Wajib mengunggah minimal 1 video bukti kondisi fisik produk')
+      return
+    }
+
+    // Pastikan codZoneId terisi
+    let finalZoneId = data.codZoneId
+    if (!finalZoneId && codZones.length > 0) {
+      finalZoneId = codZones[0].id
+    }
+
+    if (!finalZoneId) {
+      setErrorMessage('Harap pilih titik COD Safe Zone kampus')
       return
     }
 
@@ -167,34 +264,38 @@ export default function CreateProductPage() {
       const mediaPayload = [
         ...images.map((url, idx) => ({
           mediaUrl: url,
-          mediaType: 'IMAGE',
+          mediaType: 'IMAGE' as const,
           isPrimary: idx === 0,
         })),
         {
           mediaUrl: videoUrl,
-          mediaType: 'VIDEO',
+          mediaType: 'VIDEO' as const,
           isPrimary: false,
         },
       ]
 
+      const payload = {
+        ...data,
+        codZoneId: finalZoneId,
+        campusName: selectedCampus || data.campusName,
+        media: mediaPayload,
+      }
+
       const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          media: mediaPayload,
-        }),
+        body: JSON.stringify(payload),
       })
 
-      const result = await res.json()
+      const json = await res.json()
 
       if (!res.ok) {
-        throw new Error(result.error || 'Gagal membuat listing produk')
+        throw new Error(json.error || 'Gagal membuat listing')
       }
 
-      router.push(`/products/${result.data.id}`)
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Terjadi kesalahan')
+      router.push(`/products/${json.data.id}`)
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Terjadi kesalahan saat mempublikasikan produk')
     } finally {
       setLoading(false)
     }
@@ -208,34 +309,16 @@ export default function CreateProductPage() {
     )
   }
 
-  if (status === 'unauthenticated') {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <Card className="max-w-md w-full p-6 text-center space-y-4">
-          <AlertCircle className="mx-auto text-amber-500" size={48} />
-          <h2 className="text-xl font-bold">Harap Masuk Terlebih Dahulu</h2>
-          <p className="text-sm text-slate-600">
-            Anda harus memiliki akun dan login untuk menjual atau membarter barang di Kampus Thrift.
-          </p>
-          <Button onClick={() => router.push('/login')} className="w-full">
-            Masuk ke Akun
-          </Button>
-        </Card>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4">
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="container max-w-2xl mx-auto">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => router.back()}
-          className="gap-2 text-slate-600"
+          className="mb-4 text-slate-600 hover:text-slate-900"
         >
-          <ArrowLeft size={16} />
-          Kembali
+          <ArrowLeft size={16} className="mr-1" /> Kembali
         </Button>
 
         <Card className="shadow-md border-slate-200">
@@ -277,21 +360,29 @@ export default function CreateProductPage() {
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-4 pt-2">
-                  {/* Foto Upload */}
-                  <div className="border border-dashed border-slate-300 rounded-lg p-4 text-center bg-white">
+                  {/* Foto Upload Nyata */}
+                  <div className="border border-dashed border-slate-300 rounded-lg p-4 text-center bg-white hover:border-blue-400 transition-colors">
+                    <input
+                      type="file"
+                      ref={imageInputRef}
+                      onChange={handleImageFileSelect}
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                    />
+
                     <Camera className="mx-auto text-blue-600 mb-2" size={28} />
                     <p className="text-xs font-medium text-slate-700">Foto Barang ({images.length}/5)</p>
-                    <p className="text-[11px] text-slate-400 mb-3">Format JPG, PNG (Maks 10MB)</p>
+                    <p className="text-[11px] text-slate-400 mb-3">Pilih foto dari galeri HP/Laptop</p>
 
                     <div className="flex flex-wrap gap-2 justify-center mb-3">
                       {images.map((img, idx) => (
-                        <div key={idx} className="relative w-12 h-12 rounded border overflow-hidden">
+                        <div key={idx} className="relative w-12 h-12 rounded border overflow-hidden shadow-sm">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={img} alt="preview" className="object-cover w-full h-full" />
                           <button
                             type="button"
                             onClick={() => setImages(images.filter((_, i) => i !== idx))}
-                            className="absolute top-0 right-0 bg-red-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-bl"
+                            className="absolute top-0 right-0 bg-red-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-bl hover:bg-red-600"
                           >
                             ×
                           </button>
@@ -303,26 +394,43 @@ export default function CreateProductPage() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => handleFileUpload('IMAGE')}
-                      disabled={uploadingMedia || images.length >= 5}
+                      onClick={() => imageInputRef.current?.click()}
+                      disabled={uploadingImage || images.length >= 5}
                       className="text-xs"
                     >
-                      {uploadingMedia ? <Loader2 size={12} className="animate-spin mr-1" /> : null}
-                      + Tambah Foto
+                      {uploadingImage ? (
+                        <>
+                          <Loader2 size={12} className="animate-spin mr-1" />
+                          Mengunggah...
+                        </>
+                      ) : (
+                        <>
+                          <UploadCloud size={14} className="mr-1" />
+                          + Pilih Foto
+                        </>
+                      )}
                     </Button>
                   </div>
 
-                  {/* Video Upload */}
-                  <div className="border border-dashed border-slate-300 rounded-lg p-4 text-center bg-white">
+                  {/* Video Upload Nyata */}
+                  <div className="border border-dashed border-slate-300 rounded-lg p-4 text-center bg-white hover:border-purple-400 transition-colors">
+                    <input
+                      type="file"
+                      ref={videoInputRef}
+                      onChange={handleVideoFileSelect}
+                      accept="video/mp4,video/webm,video/quicktime"
+                      className="hidden"
+                    />
+
                     <Video className="mx-auto text-purple-600 mb-2" size={28} />
-                    <p className="text-xs font-medium text-slate-700">Video Kondisi Riil (Wajib 1)</p>
-                    <p className="text-[11px] text-slate-400 mb-3">Video singkat 5-30 detik (MP4, WebM)</p>
+                    <p className="text-xs font-medium text-slate-700">Video Bukti Kondisi (Wajib 1)</p>
+                    <p className="text-[11px] text-slate-400 mb-3">Durasi 5-60 detik (Maks 50MB)</p>
 
                     {videoUrl ? (
                       <div className="mb-3 p-2 bg-emerald-50 border border-emerald-200 rounded text-xs text-emerald-700 flex items-center justify-between">
                         <span className="flex items-center gap-1 truncate max-w-[150px]">
-                          <CheckCircle2 size={14} className="text-emerald-600" />
-                          Video Terpasang
+                          <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+                          Video Terunggah
                         </span>
                         <button
                           type="button"
@@ -337,12 +445,21 @@ export default function CreateProductPage() {
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => handleFileUpload('VIDEO')}
-                        disabled={uploadingMedia}
+                        onClick={() => videoInputRef.current?.click()}
+                        disabled={uploadingVideo}
                         className="text-xs text-purple-700 border-purple-200 hover:bg-purple-50"
                       >
-                        {uploadingMedia ? <Loader2 size={12} className="animate-spin mr-1" /> : null}
-                        + Unggah Video Bukti
+                        {uploadingVideo ? (
+                          <>
+                            <Loader2 size={12} className="animate-spin mr-1" />
+                            Mengunggah Video...
+                          </>
+                        ) : (
+                          <>
+                            <UploadCloud size={14} className="mr-1" />
+                            + Pilih Video Bukti
+                          </>
+                        )}
                       </Button>
                     )}
                   </div>
@@ -371,11 +488,11 @@ export default function CreateProductPage() {
                       {...register('category')}
                       className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
                     >
-                      <option value="BUKU_KULIAH">Buku Kuliah</option>
-                      <option value="ALAT_KOS_RUMAH_TANGGA">Alat Kos & RT</option>
-                      <option value="ELEKTRONIK">Elektronik</option>
-                      <option value="FASHION">Fashion</option>
-                      <option value="LAIN_LAIN">Lain-lain</option>
+                      <option value={ProductCategory.BUKU_KULIAH}>Buku Kuliah</option>
+                      <option value={ProductCategory.ALAT_KOS_RUMAH_TANGGA}>Alat Kos & RT</option>
+                      <option value={ProductCategory.ELEKTRONIK}>Elektronik</option>
+                      <option value={ProductCategory.FASHION}>Fashion</option>
+                      <option value={ProductCategory.LAIN_LAIN}>Lain-lain</option>
                     </select>
                     {errors.category && (
                       <p className="text-xs text-red-500">{errors.category.message}</p>
@@ -384,33 +501,36 @@ export default function CreateProductPage() {
 
                   <div className="space-y-1">
                     <div className="flex justify-between items-center">
-                      <Label htmlFor="condition">Kondisi Fisik: {watchCondition}%</Label>
-                      <span className="text-[11px] text-slate-500">
-                        {watchCondition >= 90 ? 'Seperti Baru' : watchCondition >= 70 ? 'Cukup Baik' : 'Ada Jejak Pakai'}
+                      <Label htmlFor="condition">Kondisi Barang</Label>
+                      <span className="text-xs font-semibold text-blue-600">
+                        {watchCondition || 85}%
                       </span>
                     </div>
                     <input
                       type="range"
-                      min="10"
+                      id="condition"
+                      min="1"
                       max="100"
                       step="5"
                       {...register('conditionPercentage', { valueAsNumber: true })}
-                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer mt-2"
+                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 mt-2"
                     />
-                    {errors.conditionPercentage && (
-                      <p className="text-xs text-red-500">{errors.conditionPercentage.message}</p>
-                    )}
+                    <div className="flex justify-between text-[10px] text-slate-400">
+                      <span>Layak Pakai (50%)</span>
+                      <span>Sangat Baik (85%)</span>
+                      <span>Seperti Baru (99%)</span>
+                    </div>
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="description">Deskripsi Barang</Label>
+                  <Label htmlFor="description">Deskripsi Kondisi & Kelengkapan</Label>
                   <textarea
                     id="description"
                     rows={4}
-                    placeholder="Jelaskan kondisi barang, kekurangan, kelengkapan, dan alasan dijual..."
+                    placeholder="Jelaskan kondisi riil, cacat jika ada, alasan jual, dan kelengkapan aksesoris..."
                     {...register('description')}
-                    className="w-full p-3 rounded-md border border-input bg-background text-sm resize-none"
+                    className="w-full p-3 rounded-md border border-input bg-background text-sm"
                   />
                   {errors.description && (
                     <p className="text-xs text-red-500">{errors.description.message}</p>
@@ -418,12 +538,13 @@ export default function CreateProductPage() {
                 </div>
               </div>
 
-              {/* Harga & Dynamic Markup Engine Section */}
-              <div className="p-4 bg-blue-50/60 border border-blue-200 rounded-lg space-y-3">
-                <div className="flex items-center justify-between">
+              {/* Dynamic Markup Engine Section */}
+              <div className="space-y-3 p-4 bg-blue-50/70 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <HelpCircle className="text-blue-600 shrink-0 mt-0.5" size={18} />
                   <div>
                     <h4 className="text-sm font-semibold text-blue-900">
-                      Penetapan Harga & Biaya Layanan
+                      Dynamic Price Markup Engine
                     </h4>
                     <p className="text-xs text-blue-700">
                       Platform menghitung markup transparan agar Anda menerima bersih sesuai harga dasar (P_base).
@@ -438,6 +559,7 @@ export default function CreateProductPage() {
                   <Input
                     id="basePrice"
                     type="number"
+                    step="1000"
                     placeholder="cth. 75000"
                     {...register('basePrice', { valueAsNumber: true })}
                     className="bg-white"
@@ -447,7 +569,6 @@ export default function CreateProductPage() {
                   )}
                 </div>
 
-                {/* Transparency Markup Breakdown */}
                 {priceDetails && (
                   <div className="bg-white p-3 rounded-md border border-blue-200 space-y-2 text-xs">
                     <div className="flex justify-between text-slate-600">
@@ -470,13 +591,13 @@ export default function CreateProductPage() {
                 )}
               </div>
 
-              {/* Barter Option (Verified Student Only) */}
-              <div className="p-4 bg-purple-50/60 border border-purple-200 rounded-lg space-y-3">
+              {/* Barter Option Section */}
+              <div className="space-y-3 p-4 bg-purple-50/60 border border-purple-200 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <RefreshCw className="text-purple-600" size={18} />
-                    <Label htmlFor="isBarter" className="font-semibold text-purple-900 cursor-pointer">
-                      Terima Opsi Barter / Tukar Barang
+                    <Label htmlFor="isBarter" className="text-sm font-semibold text-purple-950 cursor-pointer">
+                      Terima Tukar Tambah / Barter
                     </Label>
                   </div>
                   <input
@@ -526,14 +647,17 @@ export default function CreateProductPage() {
                       id="campusSelect"
                       value={selectedCampus}
                       onChange={(e) => {
-                        setSelectedCampus(e.target.value)
-                        setValue('campusName', e.target.value)
-                        const firstZone = codZones.find((z) => z.campusName === e.target.value)
-                        if (firstZone) setValue('codZoneId', firstZone.id)
+                        const newCampus = e.target.value
+                        setSelectedCampus(newCampus)
+                        setValue('campusName', newCampus)
+                        const matchingZone = codZones.find((z) => z.campusName.toLowerCase() === newCampus.toLowerCase())
+                        if (matchingZone) {
+                          setValue('codZoneId', matchingZone.id)
+                        }
                       }}
                       className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
                     >
-                      {campuses.map((campus) => (
+                      {displayCampuses.map((campus) => (
                         <option key={campus} value={campus}>
                           {campus}
                         </option>
@@ -541,23 +665,23 @@ export default function CreateProductPage() {
                     </select>
                   </div>
 
-                  <div className="space-y-1">
-                    <Label htmlFor="codZoneId">Pilih Titik Aman (COD Safe Zone)</Label>
-                    <select
-                      id="codZoneId"
-                      {...register('codZoneId')}
-                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                    >
-                      {filteredCodZones.map((zone) => (
-                        <option key={zone.id} value={zone.id}>
-                          {zone.locationName}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.codZoneId && (
-                      <p className="text-xs text-red-500">{errors.codZoneId.message}</p>
-                    )}
-                  </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="codZoneId">Pilih Titik Aman (COD Safe Zone)</Label>
+                      <select
+                        id="codZoneId"
+                        {...register('codZoneId')}
+                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                      >
+                        {(filteredCodZones.length > 0 ? filteredCodZones : UNNES_DEFAULT_ZONES).map((zone) => (
+                          <option key={zone.id} value={zone.id}>
+                            {zone.locationName}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.codZoneId && (
+                        <p className="text-xs text-red-500">{errors.codZoneId.message}</p>
+                      )}
+                    </div>
                 </div>
               </div>
 

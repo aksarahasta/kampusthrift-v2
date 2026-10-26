@@ -154,16 +154,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validasi COD Zone
+    // Validasi COD Zone (dengan auto-fallback jika ID custom atau tabel belum ada)
+    let validCodZoneId = validatedData.codZoneId
+
     const codZone = await prisma.codZone.findUnique({
       where: { id: validatedData.codZoneId },
     })
 
-    if (!codZone || !codZone.isActive) {
-      return NextResponse.json(
-        { error: 'COD Safe Zone tidak ditemukan atau tidak aktif' },
-        { status: 400 }
-      )
+    if (!codZone) {
+      // Cari zona UNNES yang ada di database
+      let unnesZone = await prisma.codZone.findFirst({
+        where: {
+          campusName: { contains: 'UNNES', mode: 'insensitive' as const },
+          isActive: true,
+        },
+      })
+
+      // Jika belum ada zona UNNES di DB sama sekali, buatkan satu otomatis
+      if (!unnesZone) {
+        unnesZone = await prisma.codZone.create({
+          data: {
+            campusName: 'Universitas Negeri Semarang (UNNES)',
+            locationName: 'Fakultas Teknik (FT)',
+            description: 'Area lobi dekanat FT / gazebo teknik',
+            isActive: true,
+          },
+        })
+      }
+
+      validCodZoneId = unnesZone.id
     }
 
     // Ambil konfigurasi markup dari SystemConfig
@@ -191,7 +210,7 @@ export async function POST(request: NextRequest) {
         barterTarget: validatedData.barterTarget || null,
         conditionPercentage: validatedData.conditionPercentage,
         campusName: validatedData.campusName,
-        codZoneId: validatedData.codZoneId,
+        codZoneId: validCodZoneId,
         status: ProductStatus.ACTIVE,
         media: {
           create: media.map((m) => ({

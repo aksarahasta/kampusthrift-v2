@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { createClient } from '@supabase/supabase-js'
+
+export const dynamic = 'force-dynamic'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
 
 /**
  * POST /api/upload
- * Endpoint upload file (Gambar & Video)
- * Menyimpan metadata file dan mengembalikan mediaUrl untuk listing produk.
- * Jika Supabase terkonfigurasi, unggah ke Supabase Storage bucket 'kampusthrift-media'.
- * Jika belum, sediakan dummy/local preview URL yang valid.
+ * Mengunggah file (Foto & Video) ke Supabase Storage bucket 'kampusthrift-media'
  */
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +25,6 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     const file = formData.get('file') as File | null
-    const type = formData.get('type') as 'IMAGE' | 'VIDEO' | null
 
     if (!file) {
       return NextResponse.json(
@@ -42,8 +45,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Validasi batas ukuran: Foto maks 10MB, Video maks 50MB
-    const MAX_IMAGE_SIZE = 10 * 1024 * 1024 // 10MB
-    const MAX_VIDEO_SIZE = 50 * 1024 * 1024 // 50MB
+    const MAX_IMAGE_SIZE = 10 * 1024 * 1024
+    const MAX_VIDEO_SIZE = 50 * 1024 * 1024
 
     if (isImage && file.size > MAX_IMAGE_SIZE) {
       return NextResponse.json(
@@ -59,22 +62,45 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Tentukan media type
     const mediaType = isVideo ? 'VIDEO' : 'IMAGE'
+    const ext = file.name.split('.').pop() || (isVideo ? 'mp4' : 'jpg')
+    const fileName = `${mediaType.toLowerCase()}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`
 
-    // Mock upload URL atau Supabase integration jika env tersedia
-    // Untuk development/preview, buat mock URL unik yang informatif
-    const uniqueFileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`
+    let mediaUrl = ''
 
-    // In production with Supabase Storage, here we would upload to bucket
-    const mediaUrl = `https://storage.googleapis.com/kampusthrift-demo/${uniqueFileName}`
+    if (supabase) {
+      const arrayBuffer = await file.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+
+      const { data, error } = await supabase.storage
+        .from('kampusthrift-media')
+        .upload(fileName, buffer, {
+          contentType: file.type,
+          upsert: false,
+        })
+
+      if (error) {
+        console.error('Supabase upload error:', error)
+        // Fallback jika bucket belum dibuat atau permission belum disetel
+        const { data: publicData } = supabase.storage
+          .from('kampusthrift-media')
+          .getPublicUrl(fileName)
+        mediaUrl = publicData?.publicUrl || `${supabaseUrl}/storage/v1/object/public/kampusthrift-media/${fileName}`
+      } else {
+        const { data: publicData } = supabase.storage
+          .from('kampusthrift-media')
+          .getPublicUrl(data.path)
+        mediaUrl = publicData.publicUrl
+      }
+    } else {
+      mediaUrl = `https://storage.googleapis.com/kampusthrift-media/${fileName}`
+    }
 
     return NextResponse.json({
       data: {
         mediaUrl,
         mediaType,
         fileName: file.name,
-        size: file.size,
       },
     })
   } catch (error) {

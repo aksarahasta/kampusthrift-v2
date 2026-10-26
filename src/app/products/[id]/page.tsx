@@ -428,6 +428,18 @@ export default function ProductDetailPage({
                 </div>
               </CardContent>
             </Card>
+
+            {/* Desktop WhatsApp Action Button */}
+            {product.status === ProductStatus.ACTIVE && !isOwner && (
+              <Button
+                onClick={handleWhatsAppContact}
+                size="lg"
+                className="w-full h-14 text-base font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
+              >
+                <MessageCircle size={22} />
+                Hubungi Penjual via WhatsApp
+              </Button>
+            )}
           </div>
         </div>
       </div>
