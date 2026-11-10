@@ -41,7 +41,7 @@ prisma/*.db
 prisma/*.db-journal
 
 
-docs/PPRD.md 
+docs/PRD.md
 docs/SRS.md
 claude.md
 TODO.md
