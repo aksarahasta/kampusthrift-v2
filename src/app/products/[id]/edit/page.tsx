@@ -434,6 +434,8 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                     <Input
                       id="basePrice"
                       type="number"
+                      step="1"
+                      min="100"
                       placeholder="50000"
                       {...register('basePrice', { valueAsNumber: true })}
                       className="pl-10 bg-white font-semibold text-slate-900"

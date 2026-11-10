@@ -559,8 +559,9 @@ export default function NewProductPage() {
                     <Input
                       id="basePrice"
                       type="number"
-                      step="1000"
-                      placeholder="cth. 75000"
+                      step="1"
+                      min="100"
+                      placeholder="cth. 75000 / 12500"
                       {...register('basePrice', { valueAsNumber: true })}
                       className="pl-10 bg-white font-semibold text-slate-900"
                     />
