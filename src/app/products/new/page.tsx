@@ -26,7 +26,6 @@ import {
   X,
   Tag,
   CreditCard,
-  QrCode,
   Shield,
   Copy,
   Check
@@ -784,7 +783,7 @@ export default function NewProductPage() {
                       : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  <QrCode size={16} />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3z"/><path d="M17 17h4v4h-4z"/><path d="M17 14h.01"/><path d="M14 17h.01"/></svg>
                   QRIS (Semua E-Wallet)
                 </button>
                 <button
@@ -797,7 +796,7 @@ export default function NewProductPage() {
                   }`}
                 >
                   <CreditCard size={16} />
-                  Transfer Bank
+                  GoPay / Dana
                 </button>
               </div>
             </div>
@@ -809,64 +808,65 @@ export default function NewProductPage() {
                   QRIS STANDAR NASIONAL
                 </div>
 
-                {/* QR Code Graphic Simulation */}
-                <div className="relative mx-auto w-40 h-40 bg-white border-2 border-slate-800 p-2 rounded-lg flex flex-col items-center justify-center shadow-inner">
-                  {/* Outer Frame */}
-                  <div className="w-full h-full border border-slate-900 rounded p-1 flex flex-col items-center justify-center bg-gradient-to-b from-slate-50 to-white">
-                    <QrCode size={96} className="text-slate-900 mx-auto" />
-                    <span className="text-[9px] font-extrabold text-blue-800 tracking-wider mt-1">
-                      KAMPUS THRIFT
-                    </span>
-                  </div>
+                {/* Real QRIS Image */}
+                <div className="mx-auto max-w-[220px]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/qris-kampusthrift.jpg"
+                    alt="QRIS KampusThrift"
+                    className="w-full rounded-lg border border-slate-200 shadow-sm"
+                  />
                 </div>
 
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-slate-800">
-                    NMID: ID1029384918291 • KampusThrift C2C
+                    AKSA RAHASTA, AKSESORIS F • NMID: ID1025440120539
                   </p>
                   <p className="text-[11px] text-slate-400">
-                    Bisa di-scan dari GoPay, OVO, Dana, ShopeePay, BCA Mobile, Livin, BRImo, dll.
+                    Scan dari GoPay, Dana, OVO, ShopeePay, BCA Mobile, Livin, BRImo, dll.
                   </p>
                 </div>
               </div>
             )}
 
-            {/* Tampilan Transfer Bank */}
+            {/* Tampilan GoPay / Dana */}
             {paymentMethod === 'TRANSFER' && (
               <div className="space-y-2">
+                {/* GoPay */}
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
                   <div>
-                    <span className="text-[11px] font-bold text-blue-700">Bank BCA</span>
-                    <p className="text-sm font-mono font-bold text-slate-900">8040 1928 3920</p>
-                    <p className="text-[10px] text-slate-400">a.n. PT Kampus Thrift Indonesia</p>
+                    <span className="text-[11px] font-bold text-green-700">GoPay</span>
+                    <p className="text-sm font-mono font-bold text-slate-900">0895335301060</p>
+                    <p className="text-[10px] text-slate-400">a.n. Laksmana Surya</p>
                   </div>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => handleCopy('804019283920', 'BCA')}
+                    onClick={() => handleCopy('0895335301060', 'GoPay')}
                     className="text-xs h-8 gap-1"
                   >
-                    {copiedBank === 'BCA' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
-                    {copiedBank === 'BCA' ? 'Tersalin' : 'Salin'}
+                    {copiedBank === 'GoPay' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                    {copiedBank === 'GoPay' ? 'Tersalin' : 'Salin'}
                   </Button>
                 </div>
 
+                {/* Dana */}
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
                   <div>
-                    <span className="text-[11px] font-bold text-amber-700">Bank Mandiri</span>
-                    <p className="text-sm font-mono font-bold text-slate-900">137 00 1928 3921</p>
-                    <p className="text-[10px] text-slate-400">a.n. PT Kampus Thrift Indonesia</p>
+                    <span className="text-[11px] font-bold text-blue-700">Dana</span>
+                    <p className="text-sm font-mono font-bold text-slate-900">0895335301060</p>
+                    <p className="text-[10px] text-slate-400">a.n. Laksmana Surya Prahasta</p>
                   </div>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => handleCopy('1370019283921', 'Mandiri')}
+                    onClick={() => handleCopy('0895335301060', 'Dana')}
                     className="text-xs h-8 gap-1"
                   >
-                    {copiedBank === 'Mandiri' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
-                    {copiedBank === 'Mandiri' ? 'Tersalin' : 'Salin'}
+                    {copiedBank === 'Dana' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                    {copiedBank === 'Dana' ? 'Tersalin' : 'Salin'}
                   </Button>
                 </div>
               </div>
