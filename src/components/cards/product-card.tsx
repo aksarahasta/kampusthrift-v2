@@ -48,8 +48,10 @@ const categoryLabels: Record<ProductCategory, string> = {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const primaryImage = product.media.find((m) => m.isPrimary && m.mediaType === 'IMAGE') || product.media.find((m) => m.mediaType === 'IMAGE')
-  const hasVideo = product.media.some((m) => m.mediaType === 'VIDEO')
+  const mediaList = product.media || []
+  const primaryImage = mediaList.find((m) => m.isPrimary && m.mediaType === 'IMAGE') || mediaList.find((m) => m.mediaType === 'IMAGE')
+  const hasVideo = mediaList.some((m) => m.mediaType === 'VIDEO')
+  const seller = product.seller || { name: 'Penjual', isVerifiedStudent: false, honestyScore: 0 }
 
   return (
     <Link href={`/products/${product.id}`}>
@@ -82,7 +84,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 📹 Ada Video
               </Badge>
             )}
-            {product.seller.isVerifiedStudent && (
+            {seller.isVerifiedStudent && (
               <StudentBadge size="sm" showText={false} className="bg-blue-600" />
             )}
           </div>
@@ -122,14 +124,14 @@ export function ProductCard({ product }: ProductCardProps) {
           <div className="flex items-center justify-between pt-1 border-t border-slate-100">
             <div className="flex items-center gap-1">
               <span className="text-xs text-slate-600 truncate max-w-[100px]">
-                {product.seller.name}
+                {seller.name}
               </span>
-              {product.seller.isVerifiedStudent && (
+              {seller.isVerifiedStudent && (
                 <StudentBadge size="sm" showText={false} />
               )}
             </div>
             <HonestyScore
-              score={product.seller.honestyScore}
+              score={seller.honestyScore || 0}
               size="sm"
               showCount={false}
             />

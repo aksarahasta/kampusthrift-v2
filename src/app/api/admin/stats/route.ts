@@ -3,12 +3,13 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Role, ProductStatus } from '@prisma/client'
+import { getVisitorStats } from '@/lib/analytics'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/admin/stats
- * Mengambil statistik platform untuk dashboard admin
+ * Mengambil statistik platform lengkap: Pengguna, Produk, Pendapatan (Markup), & Pengunjung
  */
 export async function GET(request: NextRequest) {
   try {
@@ -21,20 +22,19 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Total Users
+    // 1. Total Users
     const totalUsers = await prisma.user.count({
       where: { role: Role.USER },
     })
 
-    // Verified Students
     const verifiedStudents = await prisma.user.count({
       where: {
         role: Role.USER,
-        isVerifiedStudent: true
+        isVerifiedStudent: true,
       },
     })
 
-    // Total Products by Status
+    // 2. Products Counts
     const activeProducts = await prisma.product.count({
       where: { status: ProductStatus.ACTIVE },
     })
@@ -51,33 +51,65 @@ export async function GET(request: NextRequest) {
       where: { status: ProductStatus.BANNED },
     })
 
-    // Total Transactions (SOLD products)
-    const totalTransactions = soldProducts
+    // 3. Revenue & Transaction Metrics (dari barang SOLD)
+    const soldItems = await prisma.product.findMany({
+      where: { status: ProductStatus.SOLD },
+      select: {
+        id: true,
+        title: true,
+        basePrice: true,
+        displayPrice: true,
+        updatedAt: true,
+        category: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+    })
 
-    // Average Honesty Score
+    const totalRevenue = soldItems.reduce((sum, p) => sum + (p.displayPrice - p.basePrice), 0)
+    const totalGmv = soldItems.reduce((sum, p) => sum + p.displayPrice, 0)
+
+    const now = new Date()
+    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const thisMonthSoldItems = soldItems.filter((p) => new Date(p.updatedAt) >= startOfCurrentMonth)
+    const thisMonthRevenue = thisMonthSoldItems.reduce((sum, p) => sum + (p.displayPrice - p.basePrice), 0)
+    const thisMonthGmv = thisMonthSoldItems.reduce((sum, p) => sum + p.displayPrice, 0)
+
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+    const todaySoldItems = soldItems.filter((p) => new Date(p.updatedAt) >= startOfToday)
+    const todayRevenue = todaySoldItems.reduce((sum, p) => sum + (p.displayPrice - p.basePrice), 0)
+
+    // Potensi Pendapatan dari Listing Aktif saat ini
+    const activeItems = await prisma.product.findMany({
+      where: { status: ProductStatus.ACTIVE },
+      select: { basePrice: true, displayPrice: true },
+    })
+    const potentialRevenue = activeItems.reduce((sum, p) => sum + (p.displayPrice - p.basePrice), 0)
+
+    // 4. Honesty Scores & Reviews
     const usersWithReviews = await prisma.user.findMany({
       where: {
         role: Role.USER,
-        honestyScore: { gt: 0 }
+        honestyScore: { gt: 0 },
       },
       select: { honestyScore: true },
     })
 
-    const avgHonestyScore = usersWithReviews.length > 0
-      ? usersWithReviews.reduce((sum, u) => sum + u.honestyScore, 0) / usersWithReviews.length
-      : 0
+    const avgHonestyScore =
+      usersWithReviews.length > 0
+        ? usersWithReviews.reduce((sum, u) => sum + u.honestyScore, 0) / usersWithReviews.length
+        : 0
 
-    // Total Reviews
     const totalReviews = await prisma.review.count()
 
-    // Products by Category
+    // 5. Products by Category
     const productsByCategory = await prisma.product.groupBy({
       by: ['category'],
       where: { status: ProductStatus.ACTIVE },
       _count: true,
     })
 
-    // Recent Products (last 7 days)
+    // 6. Recent Trends (Last 7 Days)
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
@@ -88,7 +120,6 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Recent Users (last 7 days)
     const recentUsers = await prisma.user.count({
       where: {
         createdAt: { gte: sevenDaysAgo },
@@ -96,13 +127,16 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Total COD Zones
+    // 7. COD Safe Zones
     const totalCodZones = await prisma.codZone.count({
       where: { isActive: true },
     })
 
-    // System Config
+    // 8. System Config
     const systemConfig = await prisma.systemConfig.findFirst()
+
+    // 9. Visitor Stats (Daily & Monthly)
+    const visitorStats = await getVisitorStats()
 
     return NextResponse.json({
       data: {
@@ -119,8 +153,19 @@ export async function GET(request: NextRequest) {
           recent: recentProducts,
           byCategory: productsByCategory,
         },
+        revenue: {
+          total: totalRevenue,
+          totalGmv,
+          thisMonth: thisMonthRevenue,
+          thisMonthGmv,
+          today: todayRevenue,
+          potential: potentialRevenue,
+          soldCount: soldProducts,
+          averageMargin: soldProducts > 0 ? Math.round(totalRevenue / soldProducts) : 0,
+        },
+        visitors: visitorStats,
         transactions: {
-          total: totalTransactions,
+          total: soldProducts,
         },
         reviews: {
           total: totalReviews,

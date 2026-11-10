@@ -48,6 +48,7 @@ export const authOptions: NextAuthOptions = {
           honestyScore: user.honestyScore,
           phoneWhatsapp: user.phoneWhatsapp,
           campusName: user.campusName,
+          avatarUrl: user.avatarUrl,
         }
       },
     }),
@@ -61,6 +62,7 @@ export const authOptions: NextAuthOptions = {
         token.honestyScore = (user as any).honestyScore
         token.phoneWhatsapp = (user as any).phoneWhatsapp
         token.campusName = (user as any).campusName
+        token.avatarUrl = (user as any).avatarUrl
       }
 
       // Handle session update on client
@@ -70,6 +72,9 @@ export const authOptions: NextAuthOptions = {
         }
         if (session.name) {
           token.name = session.name
+        }
+        if (session.avatarUrl !== undefined) {
+          token.avatarUrl = session.avatarUrl
         }
       }
 
@@ -83,6 +88,7 @@ export const authOptions: NextAuthOptions = {
         session.user.honestyScore = token.honestyScore as number
         session.user.phoneWhatsapp = token.phoneWhatsapp as string
         session.user.campusName = token.campusName as string | null
+        session.user.avatarUrl = token.avatarUrl as string | null
       }
       return session
     },

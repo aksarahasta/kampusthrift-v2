@@ -72,8 +72,19 @@ export function MainNavbar() {
                 className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
                 title="Lihat Profil Saya"
               >
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs border border-blue-200">
-                  {user.name ? user.name.slice(0, 2).toUpperCase() : 'U'}
+                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs border border-blue-200 overflow-hidden shrink-0">
+                  {user.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={user.avatarUrl}
+                      alt={user.name || 'User'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : user.name ? (
+                    user.name.slice(0, 2).toUpperCase()
+                  ) : (
+                    'U'
+                  )}
                 </div>
                 <div className="hidden md:flex flex-col text-left">
                   <div className="flex items-center gap-1">

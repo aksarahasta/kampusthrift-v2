@@ -5,6 +5,7 @@ import { Toaster } from 'sonner'
 import { AuthProvider } from '@/components/providers/auth-provider'
 import { MainNavbar } from '@/components/shared/main-navbar'
 import { MobileNav } from '@/components/shared/mobile-nav'
+import { AnalyticsTracker } from '@/components/shared/analytics-tracker'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -22,6 +23,7 @@ export default function RootLayout({
     <html lang="id" suppressHydrationWarning>
       <body className={inter.className}>
         <AuthProvider>
+          <AnalyticsTracker />
           <MainNavbar />
           <div className="pb-16 md:pb-0">
             {children}

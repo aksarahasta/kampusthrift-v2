@@ -39,3 +39,9 @@ next-env.d.ts
 # prisma
 prisma/*.db
 prisma/*.db-journal
+
+
+docs/PPRD.md 
+docs/SRS.md
+claude.md
+TODO.md

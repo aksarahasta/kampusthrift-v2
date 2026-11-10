@@ -10,6 +10,7 @@ declare module 'next-auth' {
       honestyScore: number
       phoneWhatsapp: string
       campusName?: string | null
+      avatarUrl?: string | null
     } & DefaultSession['user']
   }
 
@@ -20,6 +21,7 @@ declare module 'next-auth' {
     honestyScore: number
     phoneWhatsapp: string
     campusName?: string | null
+    avatarUrl?: string | null
   }
 }
 
@@ -31,5 +33,6 @@ declare module 'next-auth/jwt' {
     honestyScore: number
     phoneWhatsapp: string
     campusName?: string | null
+    avatarUrl?: string | null
   }
 }

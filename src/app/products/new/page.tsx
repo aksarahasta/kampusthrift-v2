@@ -368,6 +368,7 @@ export default function NewProductPage() {
                       onChange={handleImageFileSelect}
                       accept="image/jpeg,image/png,image/webp"
                       className="hidden"
+                      autoComplete="off"
                     />
 
                     <Camera className="mx-auto text-blue-600 mb-2" size={28} />
@@ -420,6 +421,7 @@ export default function NewProductPage() {
                       onChange={handleVideoFileSelect}
                       accept="video/mp4,video/webm,video/quicktime"
                       className="hidden"
+                      autoComplete="off"
                     />
 
                     <Video className="mx-auto text-purple-600 mb-2" size={28} />

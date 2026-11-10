@@ -142,7 +142,7 @@ export default async function HomePage() {
             Kategori Pilihan
           </h2>
           <Link href="/products" className="text-xs font-semibold text-blue-600 hover:underline">
-            Semua Kategori →
+            Semua Kategori (Katalog) →
           </Link>
         </div>
 
@@ -183,7 +183,7 @@ export default async function HomePage() {
           </div>
           <Link href="/products">
             <Button variant="ghost" size="sm" className="text-blue-600 gap-1 font-semibold text-xs sm:text-sm">
-              Lihat Semua
+              Lihat Semua Barang
               <ArrowRight size={15} />
             </Button>
           </Link>

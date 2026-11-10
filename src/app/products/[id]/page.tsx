@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { formatRupiah, generateWhatsAppLink } from '@/lib/utils'
 import { ProductCategory, ProductStatus } from '@prisma/client'
+import { toast } from 'sonner'
 
 const categoryLabels: Record<ProductCategory, string> = {
   BUKU_KULIAH: 'Buku Kuliah',
@@ -126,6 +127,13 @@ export default function ProductDetailPage({
 
   const handleWhatsAppContact = () => {
     if (!product) return
+
+    // User must be logged in to buy or contact seller via WhatsApp (Req 3)
+    if (!session?.user) {
+      toast.info('Silakan masuk ke akun Anda terlebih dahulu untuk menghubungi penjual dan bertransaksi.')
+      router.push(`/login?callbackUrl=${encodeURIComponent(`/products/${product.id}`)}`)
+      return
+    }
 
     const waLink = generateWhatsAppLink(
       product.seller.phoneWhatsapp,
@@ -437,7 +445,7 @@ export default function ProductDetailPage({
                 className="w-full h-14 text-base font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
               >
                 <MessageCircle size={22} />
-                Hubungi Penjual via WhatsApp
+                {session?.user ? 'Hubungi Penjual via WhatsApp' : 'Masuk untuk Transaksi via WA'}
               </Button>
             )}
           </div>
@@ -459,7 +467,7 @@ export default function ProductDetailPage({
               className="flex-1 h-12 text-base gap-2 bg-green-600 hover:bg-green-700"
             >
               <MessageCircle size={18} />
-              Hubungi via WhatsApp
+              {session?.user ? 'Hubungi via WhatsApp' : 'Masuk untuk Chat WA'}
             </Button>
           </div>
         </div>

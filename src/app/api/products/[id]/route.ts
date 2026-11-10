@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { updateProductSchema } from '@/lib/validations/product'
+import { calculateDisplayPrice } from '@/lib/utils'
 import { ProductStatus, Role } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
@@ -142,12 +143,41 @@ export async function PATCH(
       }
     }
 
+    // Recalculate displayPrice if basePrice changed
+    let displayPrice = product.displayPrice
+    if (validatedData.basePrice && validatedData.basePrice !== product.basePrice) {
+      const config = await prisma.systemConfig.findFirst()
+      const markupPercentage = config?.markupPercentage ?? 5.0
+      const fixedFee = config?.fixedFee ?? 1000
+      displayPrice = calculateDisplayPrice(validatedData.basePrice, markupPercentage, fixedFee)
+    }
+
+    // Handle media update if provided in body
+    if (Array.isArray(body.media) && body.media.length > 0) {
+      await prisma.productMedia.deleteMany({
+        where: { productId: id },
+      })
+      await prisma.productMedia.createMany({
+        data: body.media.map((m: any, idx: number) => ({
+          productId: id,
+          mediaUrl: m.mediaUrl,
+          mediaType: m.mediaType,
+          isPrimary: m.isPrimary ?? idx === 0,
+        })),
+      })
+    }
+
     // Update data
     const updatedProduct = await prisma.product.update({
       where: { id },
       data: {
         ...validatedData,
+        displayPrice,
         updatedAt: new Date(),
+      },
+      include: {
+        media: true,
+        codZone: true,
       },
     })
 
