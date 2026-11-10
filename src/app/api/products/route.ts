@@ -185,17 +185,13 @@ export async function POST(request: NextRequest) {
       validCodZoneId = unnesZone.id
     }
 
-    // Ambil konfigurasi markup dari SystemConfig
+    // Ambil konfigurasi tarif listing fee dari SystemConfig
     const systemConfig = await prisma.systemConfig.findFirst()
-    const markupPercentage = systemConfig?.markupPercentage ?? 5.0
-    const fixedFee = systemConfig?.fixedFee ?? 1000
+    const listingFee = systemConfig?.listingFee ?? 2000
 
-    // Kalkulasi displayPrice
-    const displayPrice = calculateDisplayPrice(
-      validatedData.basePrice,
-      markupPercentage,
-      fixedFee
-    )
+    // Model baru: displayPrice sama dengan basePrice (tanpa markup ke pembeli)
+    // Keuntungan platform didapat dari listingFee yang dibayar penjual di awal
+    const displayPrice = validatedData.basePrice
 
     // Buat produk
     const product = await prisma.product.create({
@@ -206,6 +202,7 @@ export async function POST(request: NextRequest) {
         category: validatedData.category,
         basePrice: validatedData.basePrice,
         displayPrice,
+        listingFeePaid: listingFee,
         isBarter: validatedData.isBarter,
         barterTarget: validatedData.barterTarget || null,
         conditionPercentage: validatedData.conditionPercentage,

@@ -62,6 +62,7 @@ export async function PATCH(request: NextRequest) {
         data: {
           markupPercentage: validatedData.markupPercentage,
           fixedFee: validatedData.fixedFee,
+          listingFee: validatedData.listingFee,
         },
       })
     } else {
@@ -69,6 +70,7 @@ export async function PATCH(request: NextRequest) {
         data: {
           markupPercentage: validatedData.markupPercentage,
           fixedFee: validatedData.fixedFee,
+          listingFee: validatedData.listingFee,
         },
       })
     }

@@ -9,13 +9,19 @@ export const systemConfigSchema = z.object({
     .number()
     .min(0, 'Persentase markup minimal 0%')
     .max(50, 'Persentase markup maksimal 50%')
-    .default(5.0),
+    .default(0),
   fixedFee: z
     .number()
     .int('Biaya tetap harus berupa bilangan bulat')
     .min(0, 'Biaya tetap minimal 0')
     .max(100000, 'Biaya tetap maksimal 100.000')
-    .default(1000),
+    .default(0),
+  listingFee: z
+    .number()
+    .int('Biaya listing harus berupa bilangan bulat')
+    .min(0, 'Biaya listing minimal 0')
+    .max(100000, 'Biaya listing maksimal 100.000')
+    .default(2000),
 })
 
 export type SystemConfigInput = z.infer<typeof systemConfigSchema>

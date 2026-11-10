@@ -143,13 +143,10 @@ export async function PATCH(
       }
     }
 
-    // Recalculate displayPrice if basePrice changed
+    // Update displayPrice if basePrice changed (Model Pay-per-Listing: displayPrice = basePrice)
     let displayPrice = product.displayPrice
     if (validatedData.basePrice && validatedData.basePrice !== product.basePrice) {
-      const config = await prisma.systemConfig.findFirst()
-      const markupPercentage = config?.markupPercentage ?? 5.0
-      const fixedFee = config?.fixedFee ?? 1000
-      displayPrice = calculateDisplayPrice(validatedData.basePrice, markupPercentage, fixedFee)
+      displayPrice = validatedData.basePrice
     }
 
     // Handle media update if provided in body

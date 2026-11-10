@@ -23,10 +23,17 @@ import {
   HelpCircle,
   ArrowLeft,
   UploadCloud,
-  X
+  X,
+  Tag,
+  CreditCard,
+  QrCode,
+  Shield,
+  Copy,
+  Check
 } from 'lucide-react'
 import { formatRupiah } from '@/lib/utils'
 import { ProductCategory } from '@prisma/client'
+import { toast } from 'sonner'
 
 interface CodZone {
   id: string
@@ -68,14 +75,13 @@ export default function NewProductPage() {
   const imageInputRef = useRef<HTMLInputElement | null>(null)
   const videoInputRef = useRef<HTMLInputElement | null>(null)
 
-  // Price markup calculations state
-  const [priceDetails, setPriceDetails] = useState<{
-    basePrice: number
-    markupAmount: number
-    displayPrice: number
-    markupPercentage: number
-    fixedFee: number
-  } | null>(null)
+  // Listing Fee state (Pay-per-Listing model)
+  const [listingFee, setListingFee] = useState<number>(2000)
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+  const [pendingPayload, setPendingPayload] = useState<any>(null)
+  const [paymentMethod, setPaymentMethod] = useState<'QRIS' | 'TRANSFER'>('QRIS')
+  const [processingPayment, setProcessingPayment] = useState(false)
+  const [copiedBank, setCopiedBank] = useState<string | null>(null)
 
   const isVerifiedStudent = session?.user?.isVerifiedStudent ?? false
 
@@ -121,35 +127,21 @@ export default function NewProductPage() {
     loadCodZones()
   }, [setValue])
 
-  // Hitung Admin Markup secara real-time saat basePrice berubah
+  // Ambil tarif Listing Fee yang berlaku dari admin
   useEffect(() => {
-    async function calculateMarkup() {
-      if (!watchBasePrice || watchBasePrice <= 0) {
-        setPriceDetails(null)
-        return
-      }
-
+    async function loadListingFee() {
       try {
-        const res = await fetch('/api/products/calculate-price', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ basePrice: watchBasePrice }),
-        })
+        const res = await fetch('/api/products/calculate-price')
         const json = await res.json()
-        if (res.ok) {
-          setPriceDetails(json.data)
+        if (res.ok && json.data?.listingFee !== undefined) {
+          setListingFee(json.data.listingFee)
         }
       } catch (err) {
-        console.error('Failed to calculate markup', err)
+        console.error('Failed to load listing fee', err)
       }
     }
-
-    const timer = setTimeout(() => {
-      calculateMarkup()
-    }, 300)
-
-    return () => clearTimeout(timer)
-  }, [watchBasePrice])
+    loadListingFee()
+  }, [])
 
   // Real Upload Handler untuk Foto
   const handleImageFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -257,30 +249,41 @@ export default function NewProductPage() {
       return
     }
 
+    const mediaPayload = [
+      ...images.map((url, idx) => ({
+        mediaUrl: url,
+        mediaType: 'IMAGE' as const,
+        isPrimary: idx === 0,
+      })),
+      {
+        mediaUrl: videoUrl,
+        mediaType: 'VIDEO' as const,
+        isPrimary: false,
+      },
+    ]
+
+    const payload = {
+      ...data,
+      codZoneId: finalZoneId,
+      campusName: selectedCampus || data.campusName,
+      media: mediaPayload,
+    }
+
+    // Jika ada biaya listing, tampilkan modal pembayaran di awal
+    if (listingFee > 0) {
+      setPendingPayload(payload)
+      setIsPaymentModalOpen(true)
+    } else {
+      executePublish(payload)
+    }
+  }
+
+  const executePublish = async (payload: any) => {
     setLoading(true)
     setErrorMessage(null)
+    setProcessingPayment(true)
 
     try {
-      const mediaPayload = [
-        ...images.map((url, idx) => ({
-          mediaUrl: url,
-          mediaType: 'IMAGE' as const,
-          isPrimary: idx === 0,
-        })),
-        {
-          mediaUrl: videoUrl,
-          mediaType: 'VIDEO' as const,
-          isPrimary: false,
-        },
-      ]
-
-      const payload = {
-        ...data,
-        codZoneId: finalZoneId,
-        campusName: selectedCampus || data.campusName,
-        media: mediaPayload,
-      }
-
       const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -293,12 +296,28 @@ export default function NewProductPage() {
         throw new Error(json.error || 'Gagal membuat listing')
       }
 
+      toast.success(
+        listingFee > 0
+          ? `Pembayaran ${formatRupiah(listingFee)} berhasil! Produk Anda kini aktif di katalog.`
+          : 'Produk berhasil dipublikasikan di katalog!'
+      )
+
+      setIsPaymentModalOpen(false)
       router.push(`/products/${json.data.id}`)
     } catch (err: any) {
       setErrorMessage(err.message || 'Terjadi kesalahan saat mempublikasikan produk')
+      setIsPaymentModalOpen(false)
     } finally {
       setLoading(false)
+      setProcessingPayment(false)
     }
+  }
+
+  const handleCopy = (text: string, bank: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedBank(bank)
+    toast.success(`Nomor rekening ${bank} berhasil disalin`)
+    setTimeout(() => setCopiedBank(null), 2000)
   }
 
   if (status === 'loading') {
@@ -540,57 +559,50 @@ export default function NewProductPage() {
                 </div>
               </div>
 
-              {/* Dynamic Markup Engine Section */}
-              <div className="space-y-3 p-4 bg-blue-50/70 border border-blue-200 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <HelpCircle className="text-blue-600 shrink-0 mt-0.5" size={18} />
-                  <div>
-                    <h4 className="text-sm font-semibold text-blue-900">
-                      Dynamic Price Markup Engine
-                    </h4>
-                    <p className="text-xs text-blue-700">
-                      Platform menghitung markup transparan agar Anda menerima bersih sesuai harga dasar (P_base).
-                    </p>
-                  </div>
-                </div>
-
+              {/* Harga Jual Produk Section */}
+              <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-lg">
                 <div className="space-y-1">
-                  <Label htmlFor="basePrice" className="text-slate-800">
-                    Harga Bersih Penjual (Rp)
-                  </Label>
-                  <Input
-                    id="basePrice"
-                    type="number"
-                    step="1000"
-                    placeholder="cth. 75000"
-                    {...register('basePrice', { valueAsNumber: true })}
-                    className="bg-white"
-                  />
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="basePrice" className="text-slate-800 font-semibold">
+                      Harga Jual Produk (Rp) <span className="text-rose-500">*</span>
+                    </Label>
+                    <span className="text-[11px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full">
+                      Harga Bersih Asli
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Harga ini yang akan langsung dibayar pembeli saat transaksi COD tanpa markup terselubung.
+                  </p>
+                  <div className="relative mt-2">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
+                      Rp
+                    </span>
+                    <Input
+                      id="basePrice"
+                      type="number"
+                      step="1000"
+                      placeholder="cth. 75000"
+                      {...register('basePrice', { valueAsNumber: true })}
+                      className="pl-10 bg-white font-semibold text-slate-900"
+                    />
+                  </div>
                   {errors.basePrice && (
                     <p className="text-xs text-red-500">{errors.basePrice.message}</p>
                   )}
                 </div>
 
-                {priceDetails && (
-                  <div className="bg-white p-3 rounded-md border border-blue-200 space-y-2 text-xs">
-                    <div className="flex justify-between text-slate-600">
-                      <span>Harga Diterima Penjual (P_base):</span>
-                      <span className="font-semibold">{formatRupiah(priceDetails.basePrice)}</span>
-                    </div>
-                    <div className="flex justify-between text-slate-600">
-                      <span>
-                        Biaya Layanan Platform ({priceDetails.markupPercentage}% + {formatRupiah(priceDetails.fixedFee)}):
-                      </span>
-                      <span className="font-semibold text-amber-600">
-                        + {formatRupiah(priceDetails.markupAmount)}
-                      </span>
-                    </div>
-                    <div className="border-t pt-2 flex justify-between text-sm font-bold text-blue-900">
-                      <span>Harga Tayang ke Pembeli (P_display):</span>
-                      <span className="text-blue-600">{formatRupiah(priceDetails.displayPrice)}</span>
-                    </div>
+                {/* Listing Fee Notification Card */}
+                <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-lg text-xs text-emerald-900 flex items-start gap-2.5">
+                  <Tag size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Biaya Pasang Iklan (Listing Fee): {formatRupiah(listingFee)}</span>
+                    <p className="text-[11px] text-emerald-700 mt-0.5">
+                      {listingFee > 0
+                        ? `Dibayar 1 kali di muka saat mempublikasikan produk ini. Setelah tayang, seluruh uang hasil penjualan Rp ${watchBasePrice ? Number(watchBasePrice).toLocaleString('id-ID') : '0'} 100% menjadi milik Anda!`
+                        : 'Saat ini berlaku promo GRATIS pasang listing produk (Rp 0).'}
+                    </p>
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Barter Option Section */}
@@ -688,20 +700,232 @@ export default function NewProductPage() {
               </div>
 
               {/* Submit Button */}
-              <Button type="submit" className="w-full h-11 text-base mt-4" disabled={loading}>
+              <Button
+                type="submit"
+                className="w-full h-12 text-base font-semibold mt-4 bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20"
+                disabled={loading}
+              >
                 {loading ? (
                   <>
                     <Loader2 size={18} className="animate-spin mr-2" />
-                    Menerbitkan Listing...
+                    Menyiapkan Listing...
+                  </>
+                ) : listingFee > 0 ? (
+                  <>
+                    <CreditCard size={18} className="mr-2" />
+                    Lanjut Bayar Biaya Listing ({formatRupiah(listingFee)})
                   </>
                 ) : (
-                  'Tayangkan Barang Sekarang'
+                  'Tayangkan Barang Sekarang (Gratis)'
                 )}
               </Button>
             </form>
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal Pembayaran Biaya Listing (Pay-per-Listing) */}
+      {isPaymentModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-150">
+            {/* Header Modal */}
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                  <Shield size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900 leading-tight">
+                    Pembayaran Biaya Listing
+                  </h3>
+                  <p className="text-[11px] text-slate-500">Pasang Iklan Produk Preloved</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPaymentModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+                disabled={processingPayment}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Product Mini Preview */}
+            <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+              {images.length > 0 ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={images[0]}
+                  alt="Preview"
+                  className="w-14 h-14 rounded-lg object-cover border shrink-0"
+                />
+              ) : (
+                <div className="w-14 h-14 bg-slate-200 rounded-lg shrink-0 flex items-center justify-center">
+                  <Camera size={20} className="text-slate-400" />
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-slate-900 truncate">
+                  {watch('title') || 'Judul Barang'}
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  Harga Jual: <span className="font-semibold text-blue-600">{formatRupiah(watch('basePrice') || 0)}</span>
+                </p>
+                <span className="inline-block mt-0.5 text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded font-medium">
+                  {selectedCampus}
+                </span>
+              </div>
+            </div>
+
+            {/* Nominal Box */}
+            <div className="p-4 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl text-white shadow-md shadow-emerald-500/20">
+              <span className="text-xs uppercase tracking-wider text-emerald-100 font-medium">
+                Total Tagihan Pasang Iklan
+              </span>
+              <div className="text-3xl font-extrabold mt-0.5">
+                {formatRupiah(listingFee)}
+              </div>
+              <p className="text-[11px] text-emerald-100 mt-1">
+                ✓ Sekali bayar • 100% hasil penjualan saat COD milik Anda
+              </p>
+            </div>
+
+            {/* Metode Pembayaran Tabs */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-700">Pilih Metode Pembayaran</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('QRIS')}
+                  className={`p-2.5 rounded-lg border text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+                    paymentMethod === 'QRIS'
+                      ? 'border-emerald-500 bg-emerald-50/80 text-emerald-800 font-bold shadow-sm'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <QrCode size={16} />
+                  QRIS (Semua E-Wallet)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('TRANSFER')}
+                  className={`p-2.5 rounded-lg border text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+                    paymentMethod === 'TRANSFER'
+                      ? 'border-emerald-500 bg-emerald-50/80 text-emerald-800 font-bold shadow-sm'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <CreditCard size={16} />
+                  Transfer Bank
+                </button>
+              </div>
+            </div>
+
+            {/* Tampilan QRIS */}
+            {paymentMethod === 'QRIS' && (
+              <div className="p-4 border border-dashed border-slate-300 rounded-xl text-center bg-white space-y-2.5">
+                <div className="inline-block bg-slate-900 text-white text-[10px] font-bold px-3 py-0.5 rounded tracking-widest">
+                  QRIS STANDAR NASIONAL
+                </div>
+
+                {/* QR Code Graphic Simulation */}
+                <div className="relative mx-auto w-40 h-40 bg-white border-2 border-slate-800 p-2 rounded-lg flex flex-col items-center justify-center shadow-inner">
+                  {/* Outer Frame */}
+                  <div className="w-full h-full border border-slate-900 rounded p-1 flex flex-col items-center justify-center bg-gradient-to-b from-slate-50 to-white">
+                    <QrCode size={96} className="text-slate-900 mx-auto" />
+                    <span className="text-[9px] font-extrabold text-blue-800 tracking-wider mt-1">
+                      KAMPUS THRIFT
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-slate-800">
+                    NMID: ID1029384918291 • KampusThrift C2C
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    Bisa di-scan dari GoPay, OVO, Dana, ShopeePay, BCA Mobile, Livin, BRImo, dll.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Tampilan Transfer Bank */}
+            {paymentMethod === 'TRANSFER' && (
+              <div className="space-y-2">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] font-bold text-blue-700">Bank BCA</span>
+                    <p className="text-sm font-mono font-bold text-slate-900">8040 1928 3920</p>
+                    <p className="text-[10px] text-slate-400">a.n. PT Kampus Thrift Indonesia</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCopy('804019283920', 'BCA')}
+                    className="text-xs h-8 gap-1"
+                  >
+                    {copiedBank === 'BCA' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                    {copiedBank === 'BCA' ? 'Tersalin' : 'Salin'}
+                  </Button>
+                </div>
+
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] font-bold text-amber-700">Bank Mandiri</span>
+                    <p className="text-sm font-mono font-bold text-slate-900">137 00 1928 3921</p>
+                    <p className="text-[10px] text-slate-400">a.n. PT Kampus Thrift Indonesia</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCopy('1370019283921', 'Mandiri')}
+                    className="text-xs h-8 gap-1"
+                  >
+                    {copiedBank === 'Mandiri' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                    {copiedBank === 'Mandiri' ? 'Tersalin' : 'Salin'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Tombol Eksekusi Pembayaran */}
+            <div className="space-y-2 pt-2 border-t">
+              <Button
+                type="button"
+                onClick={() => executePublish(pendingPayload)}
+                disabled={processingPayment}
+                className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-600/20"
+              >
+                {processingPayment ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin mr-2" />
+                    Memverifikasi Pembayaran...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={16} className="mr-1.5" />
+                    Konfirmasi & Bayar {formatRupiah(listingFee)}
+                  </>
+                )}
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsPaymentModalOpen(false)}
+                disabled={processingPayment}
+                className="w-full text-xs text-slate-500 hover:text-slate-800 h-8"
+              >
+                Batal / Edit Data Produk
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

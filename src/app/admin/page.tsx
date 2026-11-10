@@ -195,7 +195,7 @@ export default function AdminDashboardPage() {
                 className="gap-1.5 text-xs font-medium"
               >
                 <Settings size={15} />
-                Markup
+                Tarif Listing
               </Button>
             </div>
           </div>
@@ -204,15 +204,15 @@ export default function AdminDashboardPage() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6 space-y-6">
-        {/* SECTION 1: PENDAPATAN PLATFORM (REVENUE & FINANCIALS) */}
+        {/* SECTION 1: PENDAPATAN PLATFORM (PAY-PER-LISTING REVENUE) */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
               <Wallet className="text-emerald-600" size={20} />
-              Pendapatan Platform (Admin Markup)
+              Pendapatan Platform (Biaya Pasang Iklan / Listing Fee)
             </h2>
             <span className="text-xs text-slate-500">
-              Sistem Markup: {stats.systemConfig.markupPercentage}% + {formatRupiah(stats.systemConfig.fixedFee)}
+              Tarif Listing: {formatRupiah((stats.systemConfig as any)?.listingFee ?? 2000)} / postingan
             </span>
           </div>
 
@@ -222,7 +222,7 @@ export default function AdminDashboardPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-emerald-800 uppercase tracking-wide">
-                    Total Pendapatan
+                    Total Pendapatan Listing
                   </span>
                   <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
                     <DollarSign size={18} />
@@ -232,7 +232,7 @@ export default function AdminDashboardPage() {
                   {formatRupiah(stats.revenue?.total || 0)}
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
-                  Margin bersih dari {stats.revenue?.soldCount || 0} barang terjual
+                  Akumulasi biaya posting iklan dari penjual
                 </p>
               </CardContent>
             </Card>
@@ -252,7 +252,7 @@ export default function AdminDashboardPage() {
                   {formatRupiah(stats.revenue?.thisMonth || 0)}
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
-                  Nilai transaksi (GMV): {formatRupiah(stats.revenue?.thisMonthGmv || 0)}
+                  Volume transaksi barang (GMV): {formatRupiah(stats.revenue?.thisMonthGmv || 0)}
                 </p>
               </CardContent>
             </Card>
@@ -272,27 +272,27 @@ export default function AdminDashboardPage() {
                   {formatRupiah(stats.revenue?.today || 0)}
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
-                  Margin transaksi COD hari ini
+                  Biaya listing yang masuk hari ini
                 </p>
               </CardContent>
             </Card>
 
-            {/* Potensi dari Barang Aktif */}
+            {/* Nilai Listing Aktif */}
             <Card className="border-purple-200 bg-gradient-to-br from-purple-50/50 to-white">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-purple-800 uppercase tracking-wide">
-                    Potensi Pendapatan
+                    Listing Aktif
                   </span>
                   <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
                     <ArrowUpRight size={18} />
                   </div>
                 </div>
                 <div className="text-2xl font-bold text-purple-700 mt-2">
-                  {formatRupiah(stats.revenue?.potential || 0)}
+                  {stats.products.active} Barang
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
-                  Jika {stats.products.active} listing aktif laku terjual
+                  Sedang aktif tayang di katalog kampus
                 </p>
               </CardContent>
             </Card>

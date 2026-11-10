@@ -91,6 +91,7 @@ model Product {
   campusName          String          @map("campus_name")
   codZoneId           String          @map("cod_zone_id")
   status              ProductStatus   @default(ACTIVE)
+  listingFeePaid      Int             @default(2000) @map("listing_fee_paid")
   createdAt           DateTime        @default(now()) @map("created_at")
   updatedAt           DateTime        @updatedAt @map("updated_at")
 
@@ -155,6 +156,7 @@ model SystemConfig {
   id               String   @id @default(cuid())
   markupPercentage Float    @default(5.0) @map("markup_percentage")
   fixedFee         Int      @default(1000) @map("fixed_fee")
+  listingFee       Int      @default(2000) @map("listing_fee")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@map("system_configs")

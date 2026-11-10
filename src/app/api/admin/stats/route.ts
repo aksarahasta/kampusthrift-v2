@@ -51,40 +51,45 @@ export async function GET(request: NextRequest) {
       where: { status: ProductStatus.BANNED },
     })
 
-    // 3. Revenue & Transaction Metrics (dari barang SOLD)
-    const soldItems = await prisma.product.findMany({
-      where: { status: ProductStatus.SOLD },
+    // 3. Revenue & Transaction Metrics (Model Pay-per-Listing: dari Biaya Listing yang dibayar penjual)
+    const allProducts = await prisma.product.findMany({
       select: {
         id: true,
         title: true,
-        basePrice: true,
+        listingFeePaid: true,
         displayPrice: true,
+        status: true,
+        createdAt: true,
         updatedAt: true,
         category: true,
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { createdAt: 'desc' },
     })
-
-    const totalRevenue = soldItems.reduce((sum, p) => sum + (p.displayPrice - p.basePrice), 0)
-    const totalGmv = soldItems.reduce((sum, p) => sum + p.displayPrice, 0)
 
     const now = new Date()
     const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const thisMonthSoldItems = soldItems.filter((p) => new Date(p.updatedAt) >= startOfCurrentMonth)
-    const thisMonthRevenue = thisMonthSoldItems.reduce((sum, p) => sum + (p.displayPrice - p.basePrice), 0)
-    const thisMonthGmv = thisMonthSoldItems.reduce((sum, p) => sum + p.displayPrice, 0)
-
     const startOfToday = new Date()
     startOfToday.setHours(0, 0, 0, 0)
-    const todaySoldItems = soldItems.filter((p) => new Date(p.updatedAt) >= startOfToday)
-    const todayRevenue = todaySoldItems.reduce((sum, p) => sum + (p.displayPrice - p.basePrice), 0)
 
-    // Potensi Pendapatan dari Listing Aktif saat ini
-    const activeItems = await prisma.product.findMany({
-      where: { status: ProductStatus.ACTIVE },
-      select: { basePrice: true, displayPrice: true },
-    })
-    const potentialRevenue = activeItems.reduce((sum, p) => sum + (p.displayPrice - p.basePrice), 0)
+    // Total pendapatan platform dari biaya listing iklan yang dibayar penjual
+    const totalRevenue = allProducts.reduce((sum, p) => sum + (p.listingFeePaid ?? 2000), 0)
+
+    const thisMonthProducts = allProducts.filter((p) => new Date(p.createdAt) >= startOfCurrentMonth)
+    const thisMonthRevenue = thisMonthProducts.reduce((sum, p) => sum + (p.listingFeePaid ?? 2000), 0)
+
+    const todayProducts = allProducts.filter((p) => new Date(p.createdAt) >= startOfToday)
+    const todayRevenue = todayProducts.reduce((sum, p) => sum + (p.listingFeePaid ?? 2000), 0)
+
+    // GMV Transaksi Barang Terjual
+    const soldItems = allProducts.filter((p) => p.status === ProductStatus.SOLD)
+    const totalGmv = soldItems.reduce((sum, p) => sum + p.displayPrice, 0)
+    const thisMonthSoldItems = soldItems.filter((p) => new Date(p.updatedAt) >= startOfCurrentMonth)
+    const thisMonthGmv = thisMonthSoldItems.reduce((sum, p) => sum + p.displayPrice, 0)
+
+    // Tarif listing aktif saat ini dari SystemConfig
+    const systemConfig = await prisma.systemConfig.findFirst()
+    const currentListingFee = systemConfig?.listingFee ?? 2000
+    const potentialRevenue = allProducts.filter(p => p.status === ProductStatus.ACTIVE).length * currentListingFee
 
     // 4. Honesty Scores & Reviews
     const usersWithReviews = await prisma.user.findMany({
@@ -132,8 +137,7 @@ export async function GET(request: NextRequest) {
       where: { isActive: true },
     })
 
-    // 8. System Config
-    const systemConfig = await prisma.systemConfig.findFirst()
+    // 8. System Config (already fetched above as systemConfig)
 
     // 9. Visitor Stats (Daily & Monthly)
     const visitorStats = await getVisitorStats()

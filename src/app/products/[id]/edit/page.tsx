@@ -428,13 +428,16 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 )}
               </div>
 
-              {/* Harga & Dynamic Markup */}
+              {/* Harga Jual Produk */}
               <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-lg">
                 <div className="space-y-1">
                   <Label htmlFor="basePrice" className="font-semibold text-slate-800">
-                    Harga Bersih yang Ingin Anda Terima (P_base) <span className="text-rose-500">*</span>
+                    Harga Jual Produk (Rp) <span className="text-rose-500">*</span>
                   </Label>
-                  <div className="relative">
+                  <p className="text-xs text-slate-500">
+                    Harga yang ditampilkan ke calon pembeli di katalog (tanpa markup tersembunyi).
+                  </p>
+                  <div className="relative mt-2">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
                       Rp
                     </span>
@@ -443,35 +446,13 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                       type="number"
                       placeholder="50000"
                       {...register('basePrice', { valueAsNumber: true })}
-                      className="pl-10 bg-white font-medium"
+                      className="pl-10 bg-white font-semibold text-slate-900"
                     />
                   </div>
                   {errors.basePrice && (
                     <p className="text-xs text-red-500">{errors.basePrice.message}</p>
                   )}
                 </div>
-
-                {/* Transparency Markup Breakdown */}
-                {priceDetails && (
-                  <div className="bg-white p-3 rounded-md border border-blue-200 space-y-2 text-xs">
-                    <div className="flex justify-between text-slate-600">
-                      <span>Harga Diterima Penjual (P_base):</span>
-                      <span className="font-semibold">{formatRupiah(priceDetails.basePrice)}</span>
-                    </div>
-                    <div className="flex justify-between text-slate-600">
-                      <span>
-                        Biaya Layanan Platform ({priceDetails.markupPercentage}% + {formatRupiah(priceDetails.fixedFee)}):
-                      </span>
-                      <span className="font-semibold text-amber-600">
-                        + {formatRupiah(priceDetails.markupAmount)}
-                      </span>
-                    </div>
-                    <div className="border-t pt-2 flex justify-between text-sm font-bold text-blue-900">
-                      <span>Harga Tayang ke Pembeli (P_display):</span>
-                      <span className="text-blue-600">{formatRupiah(priceDetails.displayPrice)}</span>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Barter Option */}
