@@ -5,16 +5,21 @@
  */
 export async function uploadMediaDirect(
   file: File,
-  mediaType: 'IMAGE' | 'VIDEO'
-): Promise<{ mediaUrl: string; mediaType: string }> {
+  mediaType: 'IMAGE' | 'VIDEO' | 'payment-proofs'
+): Promise<string> {
+  // Normalize mediaType for API — payment-proofs treated as IMAGE internally
+  const apiMediaType =
+    mediaType === 'payment-proofs' ? 'IMAGE' : mediaType
+
   // 1. Dapatkan Presigned Signed URL dari API (hanya mengirim metadata JSON kecil)
   const signRes = await fetch('/api/upload/sign', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       fileName: file.name,
-      fileType: file.type || (mediaType === 'VIDEO' ? 'video/mp4' : 'image/jpeg'),
-      mediaType,
+      fileType: file.type || 'image/jpeg',
+      mediaType: apiMediaType,
+      folder: mediaType === 'payment-proofs' ? 'payment-proofs' : undefined,
     }),
   })
 
@@ -30,7 +35,7 @@ export async function uploadMediaDirect(
   const uploadRes = await fetch(signedUrl, {
     method: 'PUT',
     headers: {
-      'Content-Type': file.type || (mediaType === 'VIDEO' ? 'video/mp4' : 'image/jpeg'),
+      'Content-Type': file.type || 'image/jpeg',
     },
     body: file,
   })
@@ -40,9 +45,5 @@ export async function uploadMediaDirect(
     throw new Error(`Gagal mengunggah file ke Supabase Storage (${uploadRes.status} ${errText})`)
   }
 
-  return {
-    mediaUrl: publicUrl,
-    mediaType,
-  }
+  return publicUrl
 }
-

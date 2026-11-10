@@ -193,7 +193,10 @@ export async function POST(request: NextRequest) {
     // Keuntungan platform didapat dari listingFee yang dibayar penjual di awal
     const displayPrice = validatedData.basePrice
 
-    // Buat produk
+    // Ambil paymentProofUrl dari body
+    const paymentProofUrl = body.paymentProofUrl as string | undefined
+
+    // Buat produk dengan status PENDING_PAYMENT (menunggu validasi admin)
     const product = await prisma.product.create({
       data: {
         sellerId: session.user.id,
@@ -203,12 +206,13 @@ export async function POST(request: NextRequest) {
         basePrice: validatedData.basePrice,
         displayPrice,
         listingFeePaid: listingFee,
+        paymentProofUrl: paymentProofUrl || null,
         isBarter: validatedData.isBarter,
         barterTarget: validatedData.barterTarget || null,
         conditionPercentage: validatedData.conditionPercentage,
         campusName: validatedData.campusName,
         codZoneId: validCodZoneId,
-        status: ProductStatus.ACTIVE,
+        status: ProductStatus.PENDING_PAYMENT,
         media: {
           create: media.map((m) => ({
             mediaUrl: m.mediaUrl,
@@ -225,7 +229,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        message: 'Listing berhasil dibuat',
+        message: 'Listing berhasil dikirim! Menunggu validasi pembayaran dari admin.',
         data: product,
       },
       { status: 201 }

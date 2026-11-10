@@ -51,8 +51,18 @@ export async function GET(request: NextRequest) {
       where: { status: ProductStatus.BANNED },
     })
 
+    const pendingPaymentProducts = await prisma.product.count({
+      where: { status: ProductStatus.PENDING_PAYMENT },
+    })
+
     // 3. Revenue & Transaction Metrics (Model Pay-per-Listing: dari Biaya Listing yang dibayar penjual)
+    // Hanya hitung pendapatan dari produk yang sudah tervalidasi (bukan PENDING_PAYMENT atau REJECTED)
     const allProducts = await prisma.product.findMany({
+      where: {
+        status: {
+          notIn: [ProductStatus.PENDING_PAYMENT, ProductStatus.REJECTED],
+        },
+      },
       select: {
         id: true,
         title: true,
@@ -151,6 +161,7 @@ export async function GET(request: NextRequest) {
         },
         products: {
           active: activeProducts,
+          pendingPayment: pendingPaymentProducts,
           sold: soldProducts,
           reserved: reservedProducts,
           banned: bannedProducts,

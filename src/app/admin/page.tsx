@@ -23,7 +23,8 @@ import {
   Eye,
   Calendar,
   Wallet,
-  ArrowUpRight
+  ArrowUpRight,
+  Receipt
 } from 'lucide-react'
 import { Role } from '@prisma/client'
 import { formatRupiah } from '@/lib/utils'
@@ -36,6 +37,7 @@ interface PlatformStats {
   }
   products: {
     active: number
+    pendingPayment?: number
     sold: number
     reserved: number
     banned: number
@@ -183,10 +185,15 @@ export default function AdminDashboardPage() {
                 variant="secondary"
                 size="sm"
                 onClick={() => router.push('/admin/products')}
-                className="gap-1.5 text-xs font-medium"
+                className="gap-1.5 text-xs font-medium relative"
               >
                 <ShoppingBag size={15} />
                 Produk
+                {(stats.products.pendingPayment ?? 0) > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-amber-500 text-white rounded-full">
+                    {stats.products.pendingPayment}
+                  </span>
+                )}
               </Button>
               <Button
                 variant="secondary"
@@ -204,6 +211,32 @@ export default function AdminDashboardPage() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6 space-y-6">
+        {/* Banner Notifikasi Pending Payment */}
+        {(stats.products.pendingPayment ?? 0) > 0 && (
+          <div className="bg-amber-500 text-white rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md shadow-amber-500/10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                <Receipt size={22} className="text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-sm sm:text-base">
+                  {stats.products.pendingPayment} Produk Menunggu Validasi Pembayaran
+                </p>
+                <p className="text-xs text-amber-100">
+                  Penjual telah mengunggah bukti transfer listing fee. Segera periksa dan setujui untuk menampilkan di katalog.
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => router.push('/admin/products')}
+              className="bg-white text-amber-900 hover:bg-amber-50 font-semibold text-xs shrink-0"
+              size="sm"
+            >
+              Periksa Sekarang →
+            </Button>
+          </div>
+        )}
+
         {/* SECTION 1: PENDAPATAN PLATFORM (PAY-PER-LISTING REVENUE) */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">

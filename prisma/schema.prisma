@@ -13,10 +13,12 @@ enum Role {
 }
 
 enum ProductStatus {
+  PENDING_PAYMENT
   ACTIVE
   RESERVED
   SOLD
   BANNED
+  REJECTED
 }
 
 enum MediaType {
@@ -90,8 +92,9 @@ model Product {
   conditionPercentage Int             @map("condition_percentage")
   campusName          String          @map("campus_name")
   codZoneId           String          @map("cod_zone_id")
-  status              ProductStatus   @default(ACTIVE)
+  status              ProductStatus   @default(PENDING_PAYMENT)
   listingFeePaid      Int             @default(2000) @map("listing_fee_paid")
+  paymentProofUrl     String?         @map("payment_proof_url")
   createdAt           DateTime        @default(now()) @map("created_at")
   updatedAt           DateTime        @updatedAt @map("updated_at")
 

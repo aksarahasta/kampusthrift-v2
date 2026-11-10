@@ -182,8 +182,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
     setUploadingMedia(true)
     try {
-      const result = await uploadMediaDirect(file, type)
-      const uploadedUrl = result.mediaUrl
+      const uploadedUrl = await uploadMediaDirect(file, type)
 
       if (type === 'IMAGE') {
         setImages((prev) => [...prev, uploadedUrl])

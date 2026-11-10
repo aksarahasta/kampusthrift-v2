@@ -83,6 +83,12 @@ export default function NewProductPage() {
   const [processingPayment, setProcessingPayment] = useState(false)
   const [copiedBank, setCopiedBank] = useState<string | null>(null)
 
+  // Proof of payment upload
+  const proofInputRef = useRef<HTMLInputElement | null>(null)
+  const [proofFile, setProofFile] = useState<File | null>(null)
+  const [proofPreview, setProofPreview] = useState<string | null>(null)
+  const [uploadingProof, setUploadingProof] = useState(false)
+
   const isVerifiedStudent = session?.user?.isVerifiedStudent ?? false
 
   const {
@@ -159,7 +165,7 @@ export default function NewProductPage() {
       setErrorMessage(null)
 
       const result = await uploadMediaDirect(file, 'IMAGE')
-      setImages((prev) => [...prev, result.mediaUrl])
+      setImages((prev) => [...prev, result])
       toast.success('Foto berhasil diunggah!')
     } catch (err: any) {
       console.error('Upload photo error:', err)
@@ -188,7 +194,7 @@ export default function NewProductPage() {
       setErrorMessage(null)
 
       const result = await uploadMediaDirect(file, 'VIDEO')
-      setVideoUrl(result.mediaUrl)
+      setVideoUrl(result)
       toast.success('Video kondisi riil berhasil diunggah!')
     } catch (err: any) {
       console.error('Upload video error:', err)
@@ -262,10 +268,21 @@ export default function NewProductPage() {
     setProcessingPayment(true)
 
     try {
+      // Upload proof of payment first if provided
+      let paymentProofUrl: string | null = null
+      if (proofFile) {
+        setUploadingProof(true)
+        try {
+          paymentProofUrl = await uploadMediaDirect(proofFile, 'payment-proofs')
+        } finally {
+          setUploadingProof(false)
+        }
+      }
+
       const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, paymentProofUrl }),
       })
 
       const json = await res.json()
@@ -274,11 +291,7 @@ export default function NewProductPage() {
         throw new Error(json.error || 'Gagal membuat listing')
       }
 
-      toast.success(
-        listingFee > 0
-          ? `Pembayaran ${formatRupiah(listingFee)} berhasil! Produk Anda kini aktif di katalog.`
-          : 'Produk berhasil dipublikasikan di katalog!'
-      )
+      toast.success('Produk berhasil dikirim! Menunggu validasi admin setelah bukti bayar diperiksa.')
 
       setIsPaymentModalOpen(false)
       router.push(`/products/${json.data.id}`)
@@ -294,8 +307,21 @@ export default function NewProductPage() {
   const handleCopy = (text: string, bank: string) => {
     navigator.clipboard.writeText(text)
     setCopiedBank(bank)
-    toast.success(`Nomor rekening ${bank} berhasil disalin`)
+    toast.success(`Nomor ${bank} berhasil disalin`)
     setTimeout(() => setCopiedBank(null), 2000)
+  }
+
+  const handleProofFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast.error('Hanya file gambar yang diperbolehkan (JPG, PNG, dll)')
+      return
+    }
+    setProofFile(file)
+    const reader = new FileReader()
+    reader.onload = (ev) => setProofPreview(ev.target?.result as string)
+    reader.readAsDataURL(file)
   }
 
   if (status === 'loading') {
@@ -872,26 +898,78 @@ export default function NewProductPage() {
               </div>
             )}
 
+            {/* Upload Bukti Pembayaran */}
+            <div className="space-y-2 pt-1">
+              <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                <Camera size={13} />
+                Upload Bukti Transfer / Screenshot Pembayaran
+                <span className="text-red-500">*</span>
+              </Label>
+              <input
+                ref={proofInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleProofFileChange}
+              />
+              {proofPreview ? (
+                <div className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={proofPreview}
+                    alt="Bukti Bayar"
+                    className="w-full max-h-48 object-contain rounded-lg border border-slate-200 bg-slate-50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setProofFile(null); setProofPreview(null) }}
+                    className="absolute top-1.5 right-1.5 bg-red-500 text-white rounded-full p-0.5"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => proofInputRef.current?.click()}
+                  className="w-full border-2 border-dashed border-slate-300 rounded-lg p-4 text-center text-xs text-slate-500 hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                >
+                  <UploadCloud size={20} className="mx-auto mb-1 opacity-50" />
+                  Klik untuk upload screenshot bukti pembayaran
+                  <br />
+                  <span className="text-[10px] text-slate-400">(JPG, PNG — maks 10MB)</span>
+                </button>
+              )}
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                📋 Produk akan direview admin setelah bukti bayar diterima. Produk aktif setelah disetujui.
+              </p>
+            </div>
+
             {/* Tombol Eksekusi Pembayaran */}
             <div className="space-y-2 pt-2 border-t">
               <Button
                 type="button"
                 onClick={() => executePublish(pendingPayload)}
-                disabled={processingPayment}
-                className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-600/20"
+                disabled={processingPayment || !proofFile}
+                className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {processingPayment ? (
                   <>
                     <Loader2 size={16} className="animate-spin mr-2" />
-                    Memverifikasi Pembayaran...
+                    {uploadingProof ? 'Mengupload bukti...' : 'Mengirim listing...'}
                   </>
                 ) : (
                   <>
                     <CheckCircle2 size={16} className="mr-1.5" />
-                    Konfirmasi & Bayar {formatRupiah(listingFee)}
+                    Kirim Bukti &amp; Submit Listing
                   </>
                 )}
               </Button>
+              {!proofFile && (
+                <p className="text-[10px] text-center text-amber-600 font-medium">
+                  ⚠️ Upload bukti pembayaran terlebih dahulu
+                </p>
+              )}
 
               <Button
                 type="button"

@@ -139,8 +139,8 @@ export default function UserProfilePage({
     setUploadingAvatar(true)
 
     try {
-      const result = await uploadMediaDirect(file, 'IMAGE')
-      setAvatarUploadedUrl(result.mediaUrl)
+      const uploadedUrl = await uploadMediaDirect(file, 'IMAGE')
+      setAvatarUploadedUrl(uploadedUrl)
       toast.success('Foto profil berhasil diunggah!')
     } catch (err) {
       console.error('Upload avatar error:', err)

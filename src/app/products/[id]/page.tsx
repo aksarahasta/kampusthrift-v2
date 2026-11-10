@@ -198,6 +198,28 @@ export default function ProductDetailPage({
       </div>
 
       <div className="container mx-auto px-4 py-6">
+        {product.status === ProductStatus.PENDING_PAYMENT && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-3">
+            <span className="text-xl">⏳</span>
+            <div>
+              <p className="font-semibold text-sm">Menunggu Validasi Admin</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Bukti transfer pembayaran listing fee Anda sedang diperiksa oleh admin. Produk ini akan otomatis tampil di katalog setelah disetujui.
+              </p>
+            </div>
+          </div>
+        )}
+        {product.status === ProductStatus.REJECTED && (
+          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 flex items-start gap-3">
+            <span className="text-xl">❌</span>
+            <div>
+              <p className="font-semibold text-sm">Pembayaran Ditolak</p>
+              <p className="text-xs text-red-700 mt-0.5">
+                Bukti transfer pembayaran tidak valid atau nominal tidak sesuai. Silakan periksa kembali atau hubungi admin.
+              </p>
+            </div>
+          </div>
+        )}
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Media Gallery Section */}
           <div className="space-y-4">
@@ -254,13 +276,28 @@ export default function ProductDetailPage({
 
               {/* Status Overlay */}
               {product.status !== ProductStatus.ACTIVE && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <Badge variant="destructive" className="text-base px-4 py-2">
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-4">
+                  <Badge
+                    variant={
+                      product.status === ProductStatus.PENDING_PAYMENT
+                        ? 'outline'
+                        : 'destructive'
+                    }
+                    className={`text-sm px-4 py-2 ${
+                      product.status === ProductStatus.PENDING_PAYMENT
+                        ? 'bg-amber-500 text-white border-transparent'
+                        : ''
+                    }`}
+                  >
                     {product.status === ProductStatus.SOLD
                       ? '✓ Terjual'
                       : product.status === ProductStatus.RESERVED
                         ? '🔒 Dipesan'
-                        : '🚫 Tidak Tersedia'}
+                        : product.status === ProductStatus.PENDING_PAYMENT
+                          ? '⏳ Menunggu Validasi Pembayaran'
+                          : product.status === ProductStatus.REJECTED
+                            ? '❌ Pembayaran Ditolak'
+                            : '🚫 Tidak Tersedia'}
                   </Badge>
                 </div>
               )}
