@@ -206,7 +206,22 @@ export default function UserProfilePage({
       setAvatarUploadedUrl(null)
 
       if (updateSession) {
-        await updateSession({ name: editName.trim() })
+        await updateSession({
+          name: editName.trim(),
+          avatarUrl: finalAvatarUrl,
+        })
+      }
+
+      // Notify other components like Navbar about the new profile data
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('profile-updated', {
+            detail: {
+              avatarUrl: finalAvatarUrl,
+              name: editName.trim(),
+            },
+          })
+        )
       }
 
       toast.success('Profil berhasil diperbarui!')

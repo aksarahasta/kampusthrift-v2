@@ -66,15 +66,42 @@ export const authOptions: NextAuthOptions = {
       }
 
       // Handle session update on client
-      if (trigger === 'update' && session) {
-        if (session.isVerifiedStudent !== undefined) {
+      if (trigger === 'update') {
+        if (session?.isVerifiedStudent !== undefined) {
           token.isVerifiedStudent = session.isVerifiedStudent
         }
-        if (session.name) {
+        if (session?.name) {
           token.name = session.name
         }
-        if (session.avatarUrl !== undefined) {
+        if (session?.avatarUrl !== undefined) {
           token.avatarUrl = session.avatarUrl
+        }
+
+        // Fetch fresh from DB if token has user id
+        if (token?.id) {
+          try {
+            const freshUser = await prisma.user.findUnique({
+              where: { id: token.id as string },
+              select: {
+                name: true,
+                avatarUrl: true,
+                isVerifiedStudent: true,
+                honestyScore: true,
+                phoneWhatsapp: true,
+                campusName: true,
+              },
+            })
+            if (freshUser) {
+              if (freshUser.name) token.name = freshUser.name
+              if (freshUser.avatarUrl !== undefined) token.avatarUrl = freshUser.avatarUrl
+              token.isVerifiedStudent = freshUser.isVerifiedStudent
+              token.honestyScore = freshUser.honestyScore
+              token.phoneWhatsapp = freshUser.phoneWhatsapp
+              token.campusName = freshUser.campusName
+            }
+          } catch (err) {
+            console.error('Error refreshing token from DB:', err)
+          }
         }
       }
 

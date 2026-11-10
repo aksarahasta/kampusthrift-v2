@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
@@ -15,9 +15,59 @@ import {
 import { Role } from '@prisma/client'
 
 export function MainNavbar() {
-  const { data: session } = useSession()
+  const { data: session, update: updateSession } = useSession()
   const user = session?.user
   const isAdmin = user?.role === Role.ADMIN
+
+  // Local state to keep avatar in sync immediately even with stale JWT cookies
+  const [avatar, setAvatar] = useState<string | null>(user?.avatarUrl || null)
+  const [userName, setUserName] = useState<string>(user?.name || '')
+
+  useEffect(() => {
+    if (user?.avatarUrl) {
+      setAvatar(user.avatarUrl)
+    }
+    if (user?.name) {
+      setUserName(user.name)
+    }
+
+    // If logged in, fetch fresh user data to ensure avatar & profile are always up-to-date
+    if (user?.id) {
+      fetch(`/api/users/${user.id}`)
+        .then((res) => res.json())
+        .then((json) => {
+          if (json?.data) {
+            if (json.data.avatarUrl) {
+              setAvatar(json.data.avatarUrl)
+            }
+            if (json.data.name) {
+              setUserName(json.data.name)
+            }
+            // Sync with session if different
+            if (updateSession && (json.data.avatarUrl !== user.avatarUrl || json.data.name !== user.name)) {
+              updateSession({
+                avatarUrl: json.data.avatarUrl,
+                name: json.data.name,
+              })
+            }
+          }
+        })
+        .catch(() => {})
+    }
+
+    // Listen to profile update events from edit profile modal
+    const handleProfileUpdate = (e: any) => {
+      if (e.detail?.avatarUrl !== undefined) {
+        setAvatar(e.detail.avatarUrl)
+      }
+      if (e.detail?.name) {
+        setUserName(e.detail.name)
+      }
+    }
+
+    window.addEventListener('profile-updated', handleProfileUpdate)
+    return () => window.removeEventListener('profile-updated', handleProfileUpdate)
+  }, [user?.id, user?.avatarUrl, user?.name, updateSession])
 
   return (
     <header className="border-b bg-white/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
@@ -73,15 +123,15 @@ export function MainNavbar() {
                 title="Lihat Profil Saya"
               >
                 <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs border border-blue-200 overflow-hidden shrink-0">
-                  {user.avatarUrl ? (
+                  {avatar ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={user.avatarUrl}
-                      alt={user.name || 'User'}
+                      src={avatar}
+                      alt={userName || 'User'}
                       className="w-full h-full object-cover"
                     />
-                  ) : user.name ? (
-                    user.name.slice(0, 2).toUpperCase()
+                  ) : userName ? (
+                    userName.slice(0, 2).toUpperCase()
                   ) : (
                     'U'
                   )}
@@ -89,7 +139,7 @@ export function MainNavbar() {
                 <div className="hidden md:flex flex-col text-left">
                   <div className="flex items-center gap-1">
                     <span className="text-xs font-semibold text-slate-800 truncate max-w-[110px]">
-                      {user.name}
+                      {userName || user.name}
                     </span>
                     {user.isVerifiedStudent && <StudentBadge size="sm" showText={false} />}
                   </div>
