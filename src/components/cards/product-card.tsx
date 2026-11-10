@@ -91,9 +91,26 @@ export function ProductCard({ product }: ProductCardProps) {
 
           {/* Status Badge */}
           {product.status !== 'ACTIVE' && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <Badge variant="destructive" className="text-sm">
-                {product.status === 'SOLD' ? 'Terjual' : product.status === 'RESERVED' ? 'Dipesan' : 'Tidak Tersedia'}
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-2 text-center">
+              <Badge
+                variant={product.status === 'PENDING_PAYMENT' ? 'outline' : 'destructive'}
+                className={`text-xs font-semibold px-2.5 py-1 ${
+                  product.status === 'PENDING_PAYMENT'
+                    ? 'bg-amber-500 text-white border-transparent'
+                    : product.status === 'REJECTED'
+                    ? 'bg-red-600 text-white border-transparent'
+                    : ''
+                }`}
+              >
+                {product.status === 'SOLD'
+                  ? '✓ Terjual'
+                  : product.status === 'RESERVED'
+                  ? '🔒 Dipesan'
+                  : product.status === 'PENDING_PAYMENT'
+                  ? '⏳ Sedang Direview'
+                  : product.status === 'REJECTED'
+                  ? '❌ Ditolak Admin'
+                  : 'Tidak Tersedia'}
               </Badge>
             </div>
           )}

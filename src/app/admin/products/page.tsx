@@ -37,6 +37,20 @@ export default function AdminProductsPage() {
   // Proof preview modal
   const [previewProof, setPreviewProof] = useState<string | null>(null)
 
+  // Reject modal state
+  const [rejectingProduct, setRejectingProduct] = useState<any | null>(null)
+  const [selectedPresetReason, setSelectedPresetReason] = useState<string>('Nominal transfer tidak sesuai dengan tarif listing')
+  const [customReason, setCustomReason] = useState<string>('')
+
+  const PRESET_REASONS = [
+    'Nominal transfer tidak sesuai dengan tarif listing',
+    'Screenshot bukti transfer buram atau tidak terbaca',
+    'Nama pengirim atau mutasi belum masuk ke rekening admin',
+    'Bukan bukti transfer resmi platform KampusThrift',
+    'Bukti transfer duplikat / pernah digunakan sebelumnya',
+    'Lainnya',
+  ]
+
   const fetchProducts = async () => {
     try {
       setLoading(true)
@@ -82,24 +96,52 @@ export default function AdminProductsPage() {
     }
   }
 
-  const handleValidatePayment = async (productId: string, action: 'APPROVE' | 'REJECT') => {
+  const handleValidatePayment = async (
+    productId: string,
+    action: 'APPROVE' | 'REJECT',
+    reason?: string
+  ) => {
     setActionLoading(productId)
     try {
       const res = await fetch(`/api/admin/products/${productId}/validate`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ action, reason }),
       })
 
       if (res.ok) {
-        // Remove from list after action (since filter is PENDING_PAYMENT)
-        setProducts((prev) => prev.filter((p) => p.id !== productId))
+        // Remove from list after action if filtering by PENDING_PAYMENT
+        if (statusFilter === 'PENDING_PAYMENT') {
+          setProducts((prev) => prev.filter((p) => p.id !== productId))
+        } else {
+          setProducts((prev) =>
+            prev.map((p) =>
+              p.id === productId
+                ? {
+                    ...p,
+                    status: action === 'APPROVE' ? 'ACTIVE' : 'REJECTED',
+                    rejectionReason: action === 'REJECT' ? reason : null,
+                  }
+                : p
+            )
+          )
+        }
+        setRejectingProduct(null)
       }
     } catch (err) {
       console.error('Failed to validate payment', err)
     } finally {
       setActionLoading(null)
     }
+  }
+
+  const handleConfirmReject = () => {
+    if (!rejectingProduct) return
+    const finalReason =
+      selectedPresetReason === 'Lainnya'
+        ? customReason.trim() || 'Bukti transfer tidak valid.'
+        : selectedPresetReason
+    handleValidatePayment(rejectingProduct.id, 'REJECT', finalReason)
   }
 
   const getStatusBadge = (st: string) => {
@@ -165,6 +207,110 @@ export default function AdminProductsPage() {
               className="w-full rounded-xl shadow-2xl"
             />
             <p className="text-center text-white text-xs mt-3 opacity-70">Klik di luar untuk menutup</p>
+          </div>
+        </div>
+      )}
+
+      {/* Rejection Reason Modal */}
+      {rejectingProduct && (
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+          onClick={() => setRejectingProduct(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2 text-red-600 font-bold text-base">
+                <XCircle size={20} />
+                Tolak Bukti Pembayaran
+              </div>
+              <button
+                onClick={() => setRejectingProduct(null)}
+                className="text-slate-400 hover:text-slate-700"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div>
+              <p className="text-xs text-slate-500">Produk yang ditolak:</p>
+              <p className="font-semibold text-sm text-slate-800 line-clamp-1">
+                {rejectingProduct.title}
+              </p>
+              <p className="text-xs text-slate-500">
+                Penjual: {rejectingProduct.seller?.name} ({rejectingProduct.seller?.email})
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-700">
+                Pilih Alasan Penolakan:
+              </label>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                {PRESET_REASONS.map((reason) => (
+                  <label
+                    key={reason}
+                    className={`flex items-start gap-2 p-2.5 rounded-lg border text-xs cursor-pointer transition-all ${
+                      selectedPresetReason === reason
+                        ? 'border-red-500 bg-red-50/70 text-red-900 font-medium'
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="presetReason"
+                      value={reason}
+                      checked={selectedPresetReason === reason}
+                      onChange={(e) => setSelectedPresetReason(e.target.value)}
+                      className="mt-0.5 text-red-600"
+                    />
+                    <span>{reason}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {selectedPresetReason === 'Lainnya' && (
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-700">
+                  Tuliskan Alasan Khusus:
+                </label>
+                <Input
+                  placeholder="Contoh: Bukti buram, mohon upload ulang..."
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                  className="text-xs"
+                />
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-2 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRejectingProduct(null)}
+                disabled={actionLoading === rejectingProduct.id}
+                className="w-1/2 text-xs"
+              >
+                Batal
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleConfirmReject}
+                disabled={actionLoading === rejectingProduct.id}
+                className="w-1/2 text-xs gap-1.5 bg-red-600 hover:bg-red-700"
+              >
+                {actionLoading === rejectingProduct.id ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <XCircle size={13} />
+                )}
+                Konfirmasi Tolak
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -310,6 +456,11 @@ export default function AdminProductsPage() {
                         </td>
                         <td className="p-3">
                           {getStatusBadge(product.status)}
+                          {product.status === 'REJECTED' && product.rejectionReason && (
+                            <p className="text-[10px] text-red-600 mt-1 max-w-[170px] italic leading-tight">
+                              Alasan: {product.rejectionReason}
+                            </p>
+                          )}
                         </td>
                         <td className="p-3">
                           {product.paymentProofUrl ? (
@@ -355,7 +506,11 @@ export default function AdminProductsPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleValidatePayment(product.id, 'REJECT')}
+                                  onClick={() => {
+                                    setRejectingProduct(product)
+                                    setSelectedPresetReason(PRESET_REASONS[0])
+                                    setCustomReason('')
+                                  }}
                                   disabled={actionLoading === product.id}
                                   className="text-xs h-8 text-red-700 border-red-300 hover:bg-red-50 gap-1"
                                 >

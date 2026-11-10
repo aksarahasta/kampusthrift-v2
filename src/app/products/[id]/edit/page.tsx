@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useForm } from 'react-hook-form'
@@ -21,7 +21,8 @@ import {
   AlertCircle,
   CheckCircle2,
   ArrowLeft,
-  Trash2
+  Trash2,
+  X
 } from 'lucide-react'
 import { formatRupiah } from '@/lib/utils'
 import { uploadMediaDirect } from '@/lib/upload'
@@ -50,6 +51,13 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   const [images, setImages] = useState<string[]>([])
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [uploadingMedia, setUploadingMedia] = useState(false)
+
+  // Product & Rejection state
+  const [existingProduct, setExistingProduct] = useState<any | null>(null)
+  const [newProofFile, setNewProofFile] = useState<File | null>(null)
+  const [newProofPreview, setNewProofPreview] = useState<string | null>(null)
+  const [uploadingProof, setUploadingProof] = useState(false)
+  const proofInputRef = useRef<HTMLInputElement | null>(null)
 
   // Price markup calculations state
   const [priceDetails, setPriceDetails] = useState<{
@@ -98,6 +106,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         }
 
         const product = prodJson.data
+        setExistingProduct(product)
 
         // Check ownership
         if (session?.user && product.sellerId !== session.user.id && session.user.role !== 'ADMIN') {
@@ -210,6 +219,16 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     setErrorMessage(null)
 
     try {
+      let paymentProofUrl: string | undefined = undefined
+      if (newProofFile) {
+        setUploadingProof(true)
+        try {
+          paymentProofUrl = await uploadMediaDirect(newProofFile, 'payment-proofs')
+        } finally {
+          setUploadingProof(false)
+        }
+      }
+
       const mediaPayload = [
         ...images.map((url, idx) => ({
           mediaUrl: url,
@@ -233,6 +252,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         body: JSON.stringify({
           ...data,
           media: mediaPayload,
+          paymentProofUrl,
         }),
       })
 
@@ -242,7 +262,11 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         throw new Error(result.error || 'Gagal memperbarui listing produk')
       }
 
-      toast.success('Listing produk berhasil diperbarui!')
+      if (paymentProofUrl) {
+        toast.success('Bukti pembayaran berhasil diunggah ulang! Menunggu validasi admin.')
+      } else {
+        toast.success('Listing produk berhasil diperbarui!')
+      }
       router.push(`/products/${id}`)
       router.refresh()
     } catch (error) {
@@ -310,6 +334,74 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
           </CardHeader>
 
           <CardContent>
+            {existingProduct?.status === 'REJECTED' && (
+              <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <span className="text-xl shrink-0">❌</span>
+                  <div>
+                    <p className="font-bold text-sm text-red-800">
+                      Listing Ini Ditolak oleh Admin
+                    </p>
+                    <div className="mt-1 p-2 bg-white rounded border border-red-200">
+                      <p className="text-[11px] text-slate-500 font-semibold">Alasan Penolakan dari Admin:</p>
+                      <p className="text-xs text-red-700 font-medium mt-0.5">
+                        {existingProduct.rejectionReason || 'Bukti transfer tidak valid atau belum masuk.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white rounded-lg border border-red-200 space-y-2">
+                  <Label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                    <Camera size={14} />
+                    Unggah Bukti Transfer Baru untuk Validasi Ulang:
+                  </Label>
+                  <input
+                    ref={proofInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      setNewProofFile(file)
+                      const r = new FileReader()
+                      r.onload = (ev) => setNewProofPreview(ev.target?.result as string)
+                      r.readAsDataURL(file)
+                    }}
+                  />
+                  {newProofPreview ? (
+                    <div className="relative max-w-xs">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={newProofPreview}
+                        alt="Bukti Baru"
+                        className="w-full h-36 object-contain rounded border border-slate-200 bg-slate-50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => { setNewProofFile(null); setNewProofPreview(null) }}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => proofInputRef.current?.click()}
+                      className="w-full border-2 border-dashed border-red-200 hover:border-red-400 rounded-lg p-3 text-center text-xs text-red-700 hover:bg-red-50/50"
+                    >
+                      Klik untuk memilih foto/screenshot bukti transfer baru
+                    </button>
+                  )}
+                  <p className="text-[11px] text-slate-500">
+                    Setelah Anda menyimpan perubahan, status produk akan otomatis kembali ke <strong>Menunggu Validasi</strong> agar admin dapat memeriksa ulang.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {errorMessage && (
               <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm flex items-center gap-2">
                 <AlertCircle size={18} className="shrink-0" />

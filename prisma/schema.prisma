@@ -95,6 +95,7 @@ model Product {
   status              ProductStatus   @default(PENDING_PAYMENT)
   listingFeePaid      Int             @default(2000) @map("listing_fee_paid")
   paymentProofUrl     String?         @map("payment_proof_url")
+  rejectionReason     String?         @map("rejection_reason")
   createdAt           DateTime        @default(now()) @map("created_at")
   updatedAt           DateTime        @updatedAt @map("updated_at")
 

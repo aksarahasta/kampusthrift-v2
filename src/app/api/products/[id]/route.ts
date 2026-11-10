@@ -165,13 +165,22 @@ export async function PATCH(
     }
 
     // Update data
+    const updateData: any = {
+      ...validatedData,
+      displayPrice,
+      updatedAt: new Date(),
+    }
+
+    // Jika seller mengunggah bukti pembayaran baru (misal setelah REJECTED)
+    if (body.paymentProofUrl) {
+      updateData.paymentProofUrl = body.paymentProofUrl
+      updateData.status = ProductStatus.PENDING_PAYMENT
+      updateData.rejectionReason = null
+    }
+
     const updatedProduct = await prisma.product.update({
       where: { id },
-      data: {
-        ...validatedData,
-        displayPrice,
-        updatedAt: new Date(),
-      },
+      data: updateData,
       include: {
         media: true,
         codZone: true,

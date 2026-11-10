@@ -21,7 +21,11 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { action } = body as { action: 'APPROVE' | 'REJECT'; note?: string }
+    const { action, reason } = body as {
+      action: 'APPROVE' | 'REJECT'
+      reason?: string
+      note?: string
+    }
 
     if (!['APPROVE', 'REJECT'].includes(action)) {
       return NextResponse.json({ error: 'Action tidak valid' }, { status: 400 })
@@ -35,7 +39,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Produk tidak ditemukan' }, { status: 404 })
     }
 
-    if (product.status !== ProductStatus.PENDING_PAYMENT) {
+    // Hanya izinkan validasi jika status PENDING_PAYMENT atau REJECTED (untuk pulihkan)
+    if (product.status !== ProductStatus.PENDING_PAYMENT && product.status !== ProductStatus.REJECTED) {
       return NextResponse.json(
         { error: 'Produk tidak dalam status menunggu validasi pembayaran' },
         { status: 400 }
@@ -46,7 +51,13 @@ export async function PATCH(
 
     const updated = await prisma.product.update({
       where: { id: params.id },
-      data: { status: newStatus },
+      data: {
+        status: newStatus,
+        rejectionReason:
+          action === 'REJECT'
+            ? reason || 'Bukti transfer tidak valid atau nominal tidak sesuai.'
+            : null,
+      },
     })
 
     return NextResponse.json({

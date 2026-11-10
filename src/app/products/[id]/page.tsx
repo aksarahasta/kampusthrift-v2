@@ -52,6 +52,8 @@ interface Product {
   conditionPercentage: number
   campusName: string
   status: ProductStatus
+  paymentProofUrl?: string | null
+  rejectionReason?: string | null
   createdAt: Date
   seller: {
     id: string
@@ -210,13 +212,29 @@ export default function ProductDetailPage({
           </div>
         )}
         {product.status === ProductStatus.REJECTED && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 flex items-start gap-3">
-            <span className="text-xl">❌</span>
-            <div>
-              <p className="font-semibold text-sm">Pembayaran Ditolak</p>
-              <p className="text-xs text-red-700 mt-0.5">
-                Bukti transfer pembayaran tidak valid atau nominal tidak sesuai. Silakan periksa kembali atau hubungi admin.
-              </p>
+          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 flex items-start gap-3 shadow-sm">
+            <span className="text-2xl shrink-0">❌</span>
+            <div className="flex-1 space-y-2">
+              <div>
+                <p className="font-bold text-sm text-red-800">Pembayaran Ditolak oleh Admin</p>
+                <div className="mt-1.5 p-2.5 bg-white/90 rounded-lg border border-red-200">
+                  <p className="text-xs text-slate-500 font-semibold">Alasan Penolakan dari Admin:</p>
+                  <p className="text-xs text-red-700 font-medium mt-0.5">
+                    {product.rejectionReason || 'Bukti transfer tidak valid atau nominal pembayaran tidak sesuai.'}
+                  </p>
+                </div>
+              </div>
+              {isOwner && (
+                <div className="flex items-center gap-2 pt-1">
+                  <Button
+                    size="sm"
+                    onClick={() => router.push(`/products/${product.id}/edit`)}
+                    className="text-xs bg-red-600 hover:bg-red-700 text-white font-medium"
+                  >
+                    Edit &amp; Upload Ulang Bukti Pembayaran
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}

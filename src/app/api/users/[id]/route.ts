@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { Role } from '@prisma/client'
+import { Role, ProductStatus } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,12 +47,32 @@ export async function GET(
       )
     }
 
-    // Ambil produk aktif yang dijual dengan menyertakan seller agar ProductCard tidak crash
-    const activeProducts = await prisma.product.findMany({
-      where: {
-        sellerId: id,
-        status: 'ACTIVE',
-      },
+    const session = await getServerSession(authOptions)
+    const isOwner = session?.user?.id === id || session?.user?.role === Role.ADMIN
+
+    // Jika pemilik/admin: tampilkan semua status (termasuk yang sedang direview & ditolak)
+    // Jika pengunjung lain: hanya tampilkan produk yang aktif dijual
+    const productWhere: any = {
+      sellerId: id,
+      ...(isOwner
+        ? {
+            status: {
+              in: [
+                ProductStatus.ACTIVE,
+                ProductStatus.PENDING_PAYMENT,
+                ProductStatus.REJECTED,
+                ProductStatus.SOLD,
+                ProductStatus.RESERVED,
+              ],
+            },
+          }
+        : {
+            status: ProductStatus.ACTIVE,
+          }),
+    }
+
+    const allSellerProducts = await prisma.product.findMany({
+      where: productWhere,
       include: {
         seller: {
           select: {
@@ -80,15 +100,27 @@ export async function GET(
     const soldCount = await prisma.product.count({
       where: {
         sellerId: id,
-        status: 'SOLD',
+        status: ProductStatus.SOLD,
       },
     })
+
+    const activeList = allSellerProducts.filter((p) => p.status === ProductStatus.ACTIVE)
+    const pendingList = allSellerProducts.filter((p) => p.status === ProductStatus.PENDING_PAYMENT)
+    const rejectedList = allSellerProducts.filter((p) => p.status === ProductStatus.REJECTED)
 
     return NextResponse.json({
       data: {
         ...user,
         soldCount,
-        activeProducts,
+        activeProducts: activeList,
+        allProducts: allSellerProducts,
+        productCounts: {
+          total: allSellerProducts.length,
+          active: activeList.length,
+          pending: pendingList.length,
+          rejected: rejectedList.length,
+          sold: soldCount,
+        },
       },
     })
   } catch (error) {

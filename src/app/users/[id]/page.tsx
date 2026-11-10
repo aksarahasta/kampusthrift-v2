@@ -25,7 +25,10 @@ import {
   GraduationCap,
   CheckCircle2,
   X,
-  Camera
+  Camera,
+  Clock,
+  AlertCircle,
+  AlertTriangle
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { uploadMediaDirect } from '@/lib/upload'
@@ -47,6 +50,14 @@ interface UserProfile {
   }
   soldCount: number
   activeProducts: any[]
+  allProducts?: any[]
+  productCounts?: {
+    total: number
+    active: number
+    pending: number
+    rejected: number
+    sold: number
+  }
 }
 
 interface Review {
@@ -80,6 +91,7 @@ export default function UserProfilePage({
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'products' | 'reviews'>('products')
+  const [productStatusFilter, setProductStatusFilter] = useState<string>('ALL')
 
   // Edit Profile Modal State
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -373,7 +385,11 @@ export default function UserProfilePage({
             }`}
           >
             <ShoppingBag size={16} />
-            Barang Dijual ({user.activeProducts?.length || 0})
+            {isOwner ? 'Daftar Listing Saya' : 'Barang Dijual'} (
+            {isOwner
+              ? user.allProducts?.length ?? user.activeProducts?.length ?? 0
+              : user.activeProducts?.length ?? 0}
+            )
           </button>
           <button
             onClick={() => setActiveTab('reviews')}
@@ -389,29 +405,128 @@ export default function UserProfilePage({
         </div>
 
         {/* Tab Content */}
-        <div className="bg-white rounded-b-lg border border-t-0 p-4">
+        <div className="bg-white rounded-b-lg border border-t-0 p-4 space-y-4">
           {activeTab === 'products' ? (
-            !user.activeProducts || user.activeProducts.length === 0 ? (
-              <div className="text-center py-8 text-slate-500">
-                <ShoppingBag className="mx-auto mb-2 text-slate-300" size={40} />
-                <p>Belum ada barang aktif dijual</p>
-                {isOwner && (
-                  <Button
-                    size="sm"
-                    onClick={() => router.push('/products/new')}
-                    className="mt-3 bg-blue-600 hover:bg-blue-700"
-                  >
-                    + Jual Barang Sekarang
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {user.activeProducts.map((product: any) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            )
+            <>
+              {/* Status Filter Pills for Seller / Owner */}
+              {isOwner && (
+                <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b">
+                  <span className="text-xs font-semibold text-slate-500 mr-1">Filter Status:</span>
+                  {[
+                    { key: 'ALL', label: 'Semua', count: user.productCounts?.total ?? (user.allProducts?.length || 0) },
+                    { key: 'ACTIVE', label: '✅ Aktif', count: user.productCounts?.active ?? (user.activeProducts?.length || 0) },
+                    { key: 'PENDING_PAYMENT', label: '⏳ Direview', count: user.productCounts?.pending ?? 0 },
+                    { key: 'REJECTED', label: '❌ Ditolak', count: user.productCounts?.rejected ?? 0 },
+                    { key: 'SOLD', label: 'Terjual', count: user.productCounts?.sold ?? user.soldCount ?? 0 },
+                  ].map(({ key, label, count }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setProductStatusFilter(key)}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
+                        productStatusFilter === key
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      <span>{label}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                          productStatusFilter === key
+                            ? 'bg-white/30 text-white'
+                            : key === 'PENDING_PAYMENT' && count > 0
+                            ? 'bg-amber-500 text-white'
+                            : key === 'REJECTED' && count > 0
+                            ? 'bg-red-500 text-white'
+                            : 'bg-slate-200 text-slate-700'
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {(() => {
+                const sourceProducts = isOwner
+                  ? user.allProducts || user.activeProducts || []
+                  : user.activeProducts || []
+
+                const displayedProducts = sourceProducts.filter((p: any) => {
+                  if (productStatusFilter === 'ALL') return true
+                  return p.status === productStatusFilter
+                })
+
+                if (displayedProducts.length === 0) {
+                  return (
+                    <div className="text-center py-10 text-slate-500">
+                      <ShoppingBag className="mx-auto mb-2 text-slate-300" size={40} />
+                      <p className="font-medium text-sm">
+                        {productStatusFilter === 'ALL'
+                          ? 'Belum ada barang di akun ini'
+                          : `Tidak ada produk dengan status ${productStatusFilter}`}
+                      </p>
+                      {isOwner && (
+                        <Button
+                          size="sm"
+                          onClick={() => router.push('/products/new')}
+                          className="mt-3 bg-blue-600 hover:bg-blue-700"
+                        >
+                          + Jual Barang Sekarang
+                        </Button>
+                      )}
+                    </div>
+                  )
+                }
+
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {displayedProducts.map((product: any) => (
+                      <div key={product.id} className="flex flex-col">
+                        <ProductCard product={product} />
+
+                        {/* Status Note & Action for Owner */}
+                        {isOwner && product.status === 'PENDING_PAYMENT' && (
+                          <div className="mt-2 p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] space-y-1">
+                            <div className="flex items-center gap-1 font-semibold text-amber-700">
+                              <Clock size={12} />
+                              Sedang Direview Admin
+                            </div>
+                            <p className="text-[10px] text-amber-600">
+                              Bukti transfer Anda sedang diverifikasi admin sebelum tampil di katalog.
+                            </p>
+                          </div>
+                        )}
+
+                        {isOwner && product.status === 'REJECTED' && (
+                          <div className="mt-2 p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-900 text-xs space-y-1.5 shadow-sm">
+                            <div className="flex items-center gap-1 font-bold text-red-700">
+                              <AlertCircle size={14} className="text-red-600 shrink-0" />
+                              Pembayaran Ditolak Admin
+                            </div>
+                            <div className="bg-white/80 p-1.5 rounded border border-red-200">
+                              <p className="text-[10px] text-slate-500 font-semibold">Alasan Penolakan:</p>
+                              <p className="text-[11px] text-red-700 font-medium mt-0.5">
+                                {product.rejectionReason || 'Bukti transfer tidak valid atau belum masuk.'}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => router.push(`/products/${product.id}/edit`)}
+                              className="w-full text-[11px] h-7 bg-white text-red-700 border-red-300 hover:bg-red-100 font-semibold"
+                            >
+                              Edit / Upload Ulang Bukti →
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+            </>
           ) : (
             <div className="space-y-4">
               {reviews.length === 0 ? (
