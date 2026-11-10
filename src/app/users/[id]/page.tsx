@@ -28,6 +28,7 @@ import {
   Camera
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { uploadMediaDirect } from '@/lib/upload'
 
 interface UserProfile {
   id: string
@@ -138,17 +139,11 @@ export default function UserProfilePage({
     setUploadingAvatar(true)
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const res = await fetch('/api/upload', { method: 'POST', body: formData })
-      const json = await res.json()
-
-      if (!res.ok) throw new Error(json.error || 'Gagal upload foto')
-
-      setAvatarUploadedUrl(json.data.mediaUrl)
+      const result = await uploadMediaDirect(file, 'IMAGE')
+      setAvatarUploadedUrl(result.mediaUrl)
       toast.success('Foto profil berhasil diunggah!')
     } catch (err) {
+      console.error('Upload avatar error:', err)
       toast.error(err instanceof Error ? err.message : 'Gagal upload foto profil')
       // Revert preview on failure
       setAvatarPreview(user?.avatarUrl || null)

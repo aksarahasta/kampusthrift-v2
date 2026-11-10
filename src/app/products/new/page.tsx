@@ -32,6 +32,7 @@ import {
   Check
 } from 'lucide-react'
 import { formatRupiah } from '@/lib/utils'
+import { uploadMediaDirect } from '@/lib/upload'
 import { ProductCategory } from '@prisma/client'
 import { toast } from 'sonner'
 
@@ -143,7 +144,7 @@ export default function NewProductPage() {
     loadListingFee()
   }, [])
 
-  // Real Upload Handler untuk Foto
+  // Real Direct Upload Handler untuk Foto (Bypass Vercel 4.5MB limit)
   const handleImageFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
@@ -158,22 +159,11 @@ export default function NewProductPage() {
       setUploadingImage(true)
       setErrorMessage(null)
 
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('type', 'IMAGE')
-
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const json = await res.json()
-      if (!res.ok) {
-        throw new Error(json.error || 'Gagal mengunggah foto')
-      }
-
-      setImages((prev) => [...prev, json.data.mediaUrl])
+      const result = await uploadMediaDirect(file, 'IMAGE')
+      setImages((prev) => [...prev, result.mediaUrl])
+      toast.success('Foto berhasil diunggah!')
     } catch (err: any) {
+      console.error('Upload photo error:', err)
       setErrorMessage(err.message || 'Gagal mengunggah foto')
     } finally {
       setUploadingImage(false)
@@ -181,7 +171,7 @@ export default function NewProductPage() {
     }
   }
 
-  // Real Upload Handler untuk Video
+  // Real Direct Upload Handler untuk Video (Bypass Vercel 4.5MB limit)
   const handleVideoFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
@@ -198,22 +188,11 @@ export default function NewProductPage() {
       setUploadingVideo(true)
       setErrorMessage(null)
 
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('type', 'VIDEO')
-
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const json = await res.json()
-      if (!res.ok) {
-        throw new Error(json.error || 'Gagal mengunggah video')
-      }
-
-      setVideoUrl(json.data.mediaUrl)
+      const result = await uploadMediaDirect(file, 'VIDEO')
+      setVideoUrl(result.mediaUrl)
+      toast.success('Video kondisi riil berhasil diunggah!')
     } catch (err: any) {
+      console.error('Upload video error:', err)
       setErrorMessage(err.message || 'Gagal mengunggah video')
     } finally {
       setUploadingVideo(false)

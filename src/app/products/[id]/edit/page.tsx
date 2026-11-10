@@ -24,6 +24,7 @@ import {
   Trash2
 } from 'lucide-react'
 import { formatRupiah } from '@/lib/utils'
+import { uploadMediaDirect } from '@/lib/upload'
 import { ProductCategory, ProductStatus } from '@prisma/client'
 import { toast } from 'sonner'
 
@@ -181,21 +182,9 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
     setUploadingMedia(true)
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('type', type)
+      const result = await uploadMediaDirect(file, type)
+      const uploadedUrl = result.mediaUrl
 
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      })
-      const json = await res.json()
-
-      if (!res.ok) {
-        throw new Error(json.error || 'Gagal mengunggah berkas')
-      }
-
-      const uploadedUrl = json.data.mediaUrl
       if (type === 'IMAGE') {
         setImages((prev) => [...prev, uploadedUrl])
         toast.success('Foto berhasil ditambahkan')
@@ -204,6 +193,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         toast.success('Video berhasil diunggah')
       }
     } catch (err) {
+      console.error('Upload error in edit:', err)
       toast.error(err instanceof Error ? err.message : 'Gagal upload media')
     } finally {
       setUploadingMedia(false)
