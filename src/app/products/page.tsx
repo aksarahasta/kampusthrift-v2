@@ -6,7 +6,7 @@ import { ProductCard } from '@/components/cards/product-card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
+
 import {
   Search,
   Filter,
@@ -86,15 +86,18 @@ function CatalogContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-background">
       {/* Top Search & Filter Bar */}
-      <div className="bg-white border-b sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4 space-y-3">
+      <div className="catalog-toolbar">
+        <div className="container py-4 space-y-3">
+          <h1 className="text-2xl sm:text-3xl">Katalog preloved</h1>
           <form onSubmit={handleSearchSubmit} className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} aria-hidden="true" />
               <Input
-                placeholder="Cari buku, elektronik, pakaian preloved..."
+                placeholder="Cari barang preloved…"
+                aria-label="Cari barang preloved"
+                type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -106,8 +109,11 @@ function CatalogContent() {
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
               className="gap-2"
+              aria-label={showFilters ? 'Tutup filter' : 'Buka filter'}
+              aria-expanded={showFilters}
+              aria-controls="catalog-filters"
             >
-              <SlidersHorizontal size={16} />
+              <SlidersHorizontal size={16} aria-hidden="true" />
               <span className="hidden sm:inline">Filter</span>
             </Button>
           </form>
@@ -120,7 +126,8 @@ function CatalogContent() {
                 size="sm"
                 variant={category === cat.value ? 'default' : 'outline'}
                 onClick={() => setCategory(cat.value)}
-                className="whitespace-nowrap text-xs h-8"
+                className="shrink-0 whitespace-nowrap text-sm"
+                aria-pressed={category === cat.value}
               >
                 {cat.label}
               </Button>
@@ -129,36 +136,37 @@ function CatalogContent() {
 
           {/* Filter Drawer / Expanded Box */}
           {showFilters && (
-            <Card className="p-4 bg-slate-50 border-slate-200 mt-2 space-y-4">
+            <div id="catalog-filters" className="mt-2 max-h-[45dvh] overflow-y-auto rounded-md bg-muted p-4 space-y-4">
               <div className="flex justify-between items-center">
-                <h4 className="font-semibold text-sm text-slate-800">Filter Tambahan</h4>
+                <h2 className="font-semibold text-base text-foreground">Filter tambahan</h2>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={resetFilters}
-                  className="text-xs text-blue-600 h-7"
+                  className="text-sm text-primary"
                 >
                   Reset Filter
                 </Button>
               </div>
 
-              <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                 {/* Radius Filter */}
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-600 flex items-center gap-1">
+                  <label htmlFor="catalog-radius" className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                     <MapPin size={12} />
                     Radius Kampus: {radiusKm} km
                   </label>
                   <input
                     type="range"
+                    id="catalog-radius"
                     min="1"
                     max="5"
                     step="1"
                     value={radiusKm}
                     onChange={(e) => setRadiusKm(parseInt(e.target.value))}
-                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                    className="w-full h-6 cursor-pointer"
                   />
-                  <div className="flex justify-between text-[10px] text-slate-400">
+                  <div className="flex justify-between text-xs text-muted-foreground">
                     <span>1 km</span>
                     <span>3 km</span>
                     <span>5 km</span>
@@ -167,12 +175,13 @@ function CatalogContent() {
 
                 {/* Campus Filter */}
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-600">Nama Kampus</label>
+                  <label htmlFor="catalog-campus" className="text-sm font-medium text-muted-foreground">Nama kampus</label>
                   <Input
+                    id="catalog-campus"
                     placeholder="cth. Universitas Indonesia"
                     value={campusName}
                     onChange={(e) => setCampusName(e.target.value)}
-                    className="h-8 text-xs"
+                    className="text-sm"
                   />
                 </div>
 
@@ -183,10 +192,10 @@ function CatalogContent() {
                     id="barterCheck"
                     checked={isBarter}
                     onChange={(e) => setIsBarter(e.target.checked)}
-                    className="rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                    className="rounded border-input accent-primary"
                   />
-                  <label htmlFor="barterCheck" className="text-xs font-medium text-slate-700 flex items-center gap-1">
-                    <RefreshCw size={12} className="text-purple-600" />
+                  <label htmlFor="barterCheck" className="text-sm font-medium text-foreground flex items-center gap-1">
+                    <RefreshCw size={14} className="text-primary" aria-hidden="true" />
                     Hanya Barang Barter
                   </label>
                 </div>
@@ -198,33 +207,33 @@ function CatalogContent() {
                     id="studentCheck"
                     checked={verifiedStudentOnly}
                     onChange={(e) => setVerifiedStudentOnly(e.target.checked)}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-input accent-primary"
                   />
-                  <label htmlFor="studentCheck" className="text-xs font-medium text-slate-700 flex items-center gap-1">
-                    <GraduationCap size={14} className="text-blue-600" />
+                  <label htmlFor="studentCheck" className="text-sm font-medium text-foreground flex items-center gap-1">
+                    <GraduationCap size={14} className="text-primary" aria-hidden="true" />
                     Penjual Mahasiswa (.ac.id)
                   </label>
                 </div>
               </div>
-            </Card>
+            </div>
           )}
         </div>
       </div>
 
       {/* Main Content Product Grid */}
-      <div className="container mx-auto px-4 py-6">
+      <div className="container py-6">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-            <Loader2 size={32} className="animate-spin text-blue-600 mb-2" />
+          <div role="status" className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+            <Loader2 size={32} className="motion-safe:animate-spin text-primary mb-2" aria-hidden="true" />
             <p className="text-sm">Memuat katalog produk...</p>
           </div>
         ) : products.length === 0 ? (
           <div className="text-center py-20">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-3 text-muted-foreground">
               <Search size={24} />
             </div>
-            <h3 className="font-semibold text-slate-800 text-lg">Tidak ada produk ditemukan</h3>
-            <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+            <h2 className="mx-auto font-semibold text-foreground text-xl">Tidak ada produk ditemukan</h2>
+            <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto">
               Coba sesuaikan kata kunci pencarian atau ubah filter radius jarak kampus Anda.
             </p>
             <Button onClick={resetFilters} variant="outline" size="sm" className="mt-4">
@@ -234,19 +243,19 @@ function CatalogContent() {
         ) : (
           <div>
             <div className="flex justify-between items-center mb-4">
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-muted-foreground">
                 Menampilkan <strong>{products.length}</strong> barang preloved
               </p>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
+            <div className="product-grid">
+              {products.map((product, index) => (
+                <ProductCard key={product.id} product={product} priority={index === 0} />
               ))}
             </div>
           </div>
         )}
       </div>
-    </div>
+    </main>
   )
 }
 

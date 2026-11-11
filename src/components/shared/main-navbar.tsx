@@ -3,171 +3,139 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
+import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { StudentBadge } from '@/components/shared/student-badge'
-import {
-  Shield,
-  PlusCircle,
-  LogOut,
-  ShoppingBag,
-  Sparkles
-} from 'lucide-react'
+import { Shield, PlusCircle, LogOut, ShoppingBag, Star, Menu, X, User } from 'lucide-react'
 import { Role } from '@prisma/client'
 
 export function MainNavbar() {
-  const { data: session, update: updateSession } = useSession()
+  const { data: session } = useSession()
   const user = session?.user
   const isAdmin = user?.role === Role.ADMIN
-
-  // Local state to keep avatar in sync immediately even with stale JWT cookies
+  const pathname = usePathname()
+  const [menuOpen, setMenuOpen] = useState(false)
   const [avatar, setAvatar] = useState<string | null>(user?.avatarUrl || null)
   const [userName, setUserName] = useState<string>(user?.name || '')
 
-  useEffect(() => {
-    if (user?.avatarUrl) {
-      setAvatar(user.avatarUrl)
-    }
-    if (user?.name) {
-      setUserName(user.name)
-    }
+  useEffect(() => { setMenuOpen(false) }, [pathname])
 
-    // Hanya fetch jika user login tapi avatar belum ada di session
+  useEffect(() => {
+    if (user?.avatarUrl) setAvatar(user.avatarUrl)
+    if (user?.name) setUserName(user.name)
+
     if (user?.id && !user?.avatarUrl) {
       fetch(`/api/users/${user.id}`)
         .then((res) => res.json())
         .then((json) => {
           if (json?.data) {
-            if (json.data.avatarUrl) {
-              setAvatar(json.data.avatarUrl)
-            }
-            if (json.data.name) {
-              setUserName(json.data.name)
-            }
+            if (json.data.avatarUrl) setAvatar(json.data.avatarUrl)
+            if (json.data.name) setUserName(json.data.name)
           }
         })
         .catch(() => {})
     }
 
-    // Listen to profile update events from edit profile modal
-    const handleProfileUpdate = (e: any) => {
-      if (e.detail?.avatarUrl !== undefined) {
-        setAvatar(e.detail.avatarUrl)
-      }
-      if (e.detail?.name) {
-        setUserName(e.detail.name)
-      }
+    const handleProfileUpdate = (event: Event) => {
+      const { detail } = event as CustomEvent<{ avatarUrl?: string | null; name?: string }>
+      if (detail?.avatarUrl !== undefined) setAvatar(detail.avatarUrl)
+      if (detail?.name) setUserName(detail.name)
     }
-
     window.addEventListener('profile-updated', handleProfileUpdate)
     return () => window.removeEventListener('profile-updated', handleProfileUpdate)
   }, [user?.id, user?.avatarUrl, user?.name])
 
+  useEffect(() => {
+    if (!menuOpen) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMenuOpen(false)
+        document.getElementById('mobile-menu-toggle')?.focus()
+      }
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [menuOpen])
+
   return (
-    <header className="border-b bg-white/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
-      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-9 h-9 bg-gradient-to-tr from-blue-700 to-blue-500 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-            <span className="text-white font-extrabold text-base tracking-tight">KT</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-bold text-lg text-slate-900 leading-none group-hover:text-blue-600 transition-colors">
-              Kampus Thrift
-            </span>
-            <span className="text-[10px] text-slate-400 font-medium">Hyperlocal C2C</span>
+    <header className="market-navbar">
+      <div className="container flex h-full items-center justify-between gap-3">
+        <Link href="/" className="market-brand" aria-label="Kampus Thrift, beranda">
+          <div className="market-brand-mark"><span>KT</span></div>
+          <div className="flex min-w-0 flex-col">
+            <span className="market-brand-name">Kampus Thrift</span>
+            <span className="hidden text-xs text-muted-foreground sm:block">Preloved sekitar kampus</span>
           </div>
         </Link>
 
-        {/* Navigation Actions */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Link href="/products">
-            <Button variant="ghost" size="sm" className="text-slate-700 hover:text-blue-600 font-medium">
-              <ShoppingBag size={15} className="mr-1.5" />
-              Katalog
-            </Button>
+        <nav aria-label="Navigasi utama" className="hidden items-center gap-2 md:flex">
+          <Link href="/products" className="market-nav-link" aria-current={pathname === '/products' ? 'page' : undefined}>
+            <ShoppingBag size={17} aria-hidden="true" />Katalog
           </Link>
-
-          <Link href="/products/new">
-            <Button
-              size="sm"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm shadow-blue-600/20"
-            >
-              <PlusCircle size={15} className="mr-1.5" />
-              + Jual Barang
-            </Button>
-          </Link>
-
-          {/* Admin Link if Admin */}
+          <Button asChild variant="outline" size="sm">
+            <Link href="/products/new"><PlusCircle size={17} className="mr-2" aria-hidden="true" />Jual barang</Link>
+          </Button>
           {isAdmin && (
-            <Link href="/admin">
-              <Button variant="outline" size="sm" className="text-purple-700 border-purple-200 bg-purple-50 hover:bg-purple-100">
-                <Shield size={14} className="mr-1" />
-                Admin
-              </Button>
+            <Link href="/admin" className="market-nav-link" aria-current={pathname.startsWith('/admin') ? 'page' : undefined}>
+              <Shield size={17} aria-hidden="true" />Admin
             </Link>
           )}
-
-          {/* User Profile / Auth State */}
           {user ? (
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-              <Link
-                href={`/users/${user.id}`}
-                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                title="Lihat Profil Saya"
-              >
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs border border-blue-200 overflow-hidden shrink-0">
+            <div className="flex items-center gap-1 border-l border-border pl-2">
+              <Link href={`/users/${user.id}`} className="flex min-h-11 items-center gap-2 rounded-md p-1.5 hover:bg-muted" title="Lihat Profil Saya">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary text-sm font-semibold text-secondary-foreground">
                   {avatar ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={avatar}
-                      alt={userName || 'User'}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : userName ? (
-                    userName.slice(0, 2).toUpperCase()
-                  ) : (
-                    'U'
-                  )}
+                    <img src={avatar} alt={userName || 'User'} width={36} height={36} className="h-full w-full object-cover" />
+                  ) : userName ? userName.slice(0, 2).toUpperCase() : 'U'}
                 </div>
-                <div className="hidden md:flex flex-col text-left">
+                <div className="hidden flex-col text-left lg:flex">
                   <div className="flex items-center gap-1">
-                    <span className="text-xs font-semibold text-slate-800 truncate max-w-[110px]">
-                      {userName || user.name}
-                    </span>
+                    <span className="max-w-[110px] truncate text-sm font-medium">{userName || user.name}</span>
                     {user.isVerifiedStudent && <StudentBadge size="sm" showText={false} />}
                   </div>
-                  <span className="text-[10px] text-slate-400">
-                    ⭐ {user.honestyScore > 0 ? user.honestyScore.toFixed(1) : 'Baru'}
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Star size={12} aria-hidden="true" />{user.honestyScore > 0 ? user.honestyScore.toFixed(1) : 'Baru'}
                   </span>
                 </div>
               </Link>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => signOut({ callbackUrl: '/' })}
-                className="text-slate-500 hover:text-rose-600 hover:bg-rose-50 h-8 px-2"
-                title="Keluar"
-              >
-                <LogOut size={16} />
+              <Button variant="ghost" size="icon" onClick={() => signOut({ callbackUrl: '/' })} className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="Keluar" aria-label="Keluar">
+                <LogOut size={18} aria-hidden="true" />
               </Button>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
-              <Link href="/login">
-                <Button variant="ghost" size="sm" className="text-slate-700 font-medium">
-                  Masuk
-                </Button>
-              </Link>
-              <Link href="/register">
-                <Button size="sm" variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 font-medium">
-                  Daftar
-                </Button>
-              </Link>
+            <div className="flex items-center gap-1 border-l border-border pl-2">
+              <Link href="/login" className="market-nav-link">Masuk</Link>
+              <Button asChild size="sm"><Link href="/register">Daftar</Link></Button>
             </div>
           )}
-        </div>
+        </nav>
+
+        <Button id="mobile-menu-toggle" variant="ghost" size="icon" className="md:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Tutup menu' : 'Buka menu'} aria-expanded={menuOpen} aria-controls="mobile-header-menu">
+          {menuOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
+        </Button>
       </div>
+
+      {menuOpen && (
+        <nav id="mobile-header-menu" aria-label="Menu akun dan navigasi" className="max-h-[calc(100dvh-var(--navbar-height)-var(--mobile-nav-height)-env(safe-area-inset-bottom))] overflow-y-auto border-b border-border bg-card p-4 md:hidden">
+          <div className="container flex flex-col gap-1">
+            <Link href="/products" className="market-nav-link justify-start" onClick={() => setMenuOpen(false)}><ShoppingBag size={18} aria-hidden="true" />Katalog</Link>
+            <Link href="/products/new" className="market-nav-link justify-start" onClick={() => setMenuOpen(false)}><PlusCircle size={18} aria-hidden="true" />Jual barang</Link>
+            {isAdmin && <Link href="/admin" className="market-nav-link justify-start" onClick={() => setMenuOpen(false)}><Shield size={18} aria-hidden="true" />Admin</Link>}
+            {user ? (
+              <>
+                <Link href={`/users/${user.id}`} className="market-nav-link justify-start" onClick={() => setMenuOpen(false)}><User size={18} aria-hidden="true" /><span className="truncate">{userName || user.name || 'Profil saya'}</span></Link>
+                <Button variant="ghost" className="justify-start gap-2 text-destructive" onClick={() => signOut({ callbackUrl: '/' })}><LogOut size={18} aria-hidden="true" />Keluar</Button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="market-nav-link justify-start" onClick={() => setMenuOpen(false)}>Masuk</Link>
+                <Link href="/register" className="market-nav-link justify-start" onClick={() => setMenuOpen(false)}>Daftar</Link>
+              </>
+            )}
+          </div>
+        </nav>
+      )}
     </header>
   )
 }

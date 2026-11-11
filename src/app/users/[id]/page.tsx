@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { ProductCard } from '@/components/cards/product-card'
 import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -244,8 +245,8 @@ export default function UserProfilePage({
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
-        <Loader2 className="animate-spin text-blue-600" size={32} />
-        <p className="text-sm text-slate-500 mt-2">Memuat profil...</p>
+        <Loader2 className="animate-spin motion-reduce:animate-none text-primary" size={32} />
+        <p className="text-sm text-muted-foreground mt-2">Memuat profil...</p>
       </div>
     )
   }
@@ -254,8 +255,8 @@ export default function UserProfilePage({
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <Card className="max-w-md w-full p-6 text-center space-y-4">
-          <User className="mx-auto text-slate-400" size={48} />
-          <h2 className="text-xl font-bold text-slate-800">Pengguna Tidak Ditemukan</h2>
+          <User className="mx-auto text-muted-foreground" size={48} />
+          <h2 className="text-xl font-bold text-foreground">Pengguna Tidak Ditemukan</h2>
           <Button onClick={() => router.push('/products')} className="w-full">
             Kembali ke Katalog
           </Button>
@@ -265,10 +266,10 @@ export default function UserProfilePage({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="bg-card border-b border-border relative z-10">
+        <div className="container mx-auto py-3 flex min-w-0 flex-wrap items-center justify-between gap-3">
           <Button
             variant="ghost"
             size="sm"
@@ -284,7 +285,7 @@ export default function UserProfilePage({
               variant="outline"
               size="sm"
               onClick={() => setIsEditOpen(true)}
-              className="gap-1.5 border-blue-200 text-blue-600 hover:bg-blue-50"
+              className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
             >
               <Edit3 size={14} />
               Edit Profil
@@ -293,14 +294,14 @@ export default function UserProfilePage({
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6 space-y-6">
+      <div className="container mx-auto py-5 sm:py-8 space-y-5 sm:space-y-6">
         {/* Profile Card */}
         <Card className="overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-400 h-24" />
+          <div className="bg-primary/15 h-24" />
           <CardContent className="relative pt-0">
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end -mt-10">
               {/* Avatar */}
-              <div className="w-20 h-20 bg-white rounded-full border-4 border-white shadow-lg flex items-center justify-center text-blue-600 font-bold text-2xl overflow-hidden shrink-0">
+              <div className="w-20 h-20 bg-card rounded-full border-4 border-card shadow-lg flex items-center justify-center text-primary font-bold text-2xl overflow-hidden shrink-0">
                 {(avatarPreview || user.avatarUrl) ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -313,27 +314,27 @@ export default function UserProfilePage({
                 )}
               </div>
 
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-xl font-bold text-slate-900">{user.name}</h1>
+                  <h1 className="text-xl font-bold text-foreground">{user.name}</h1>
                   {user.isVerifiedStudent && <StudentBadge />}
                 </div>
                 {user.campusName && (
-                  <p className="text-sm text-slate-600 flex items-center gap-1 mt-0.5">
+                  <p className="text-sm text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
                     <MapPin size={14} />
                     {user.campusName}
-                    {user.faculty && <span className="text-slate-400">• {user.faculty}</span>}
+                    {user.faculty && <span className="text-muted-foreground">{user.faculty}</span>}
                   </p>
                 )}
                 {isOwner && user.phoneWhatsapp && (
-                  <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                    <Phone size={12} className="text-emerald-600" />
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                    <Phone size={12} className="text-success" />
                     WhatsApp: {user.phoneWhatsapp}
                   </p>
                 )}
               </div>
 
-              <div className="flex flex-col items-end gap-2">
+              <div className="flex flex-col items-start gap-2 sm:items-end">
                 <HonestyScore score={user.honestyScore} size="md" />
                 {isOwner && (
                   <Button
@@ -350,24 +351,24 @@ export default function UserProfilePage({
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-3 gap-4 mt-6">
-              <div className="text-center p-3 bg-slate-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{user.soldCount}</div>
-                <div className="text-xs text-slate-500">Terjual</div>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-6">
+              <div className="min-w-0 text-center p-2 sm:p-3 bg-muted rounded-lg">
+                <div className="break-words text-xl sm:text-2xl font-bold text-primary">{user.soldCount}</div>
+                <div className="text-xs text-muted-foreground">Terjual</div>
               </div>
-              <div className="text-center p-3 bg-slate-50 rounded-lg">
-                <div className="text-2xl font-bold text-emerald-600">
+              <div className="min-w-0 text-center p-2 sm:p-3 bg-muted rounded-lg">
+                <div className="break-words text-xl sm:text-2xl font-bold text-success">
                   {user.activeProducts?.length || 0}
                 </div>
-                <div className="text-xs text-slate-500">Barang Aktif</div>
+                <div className="text-xs text-muted-foreground">Barang Aktif</div>
               </div>
-              <div className="text-center p-3 bg-slate-50 rounded-lg">
-                <div className="text-2xl font-bold text-amber-500">{user._count.reviewsReceived}</div>
-                <div className="text-xs text-slate-500">Ulasan</div>
+              <div className="min-w-0 text-center p-2 sm:p-3 bg-muted rounded-lg">
+                <div className="break-words text-xl sm:text-2xl font-bold text-warning">{user._count.reviewsReceived}</div>
+                <div className="text-xs text-muted-foreground">Ulasan</div>
               </div>
             </div>
 
-            <div className="flex items-center gap-1 text-xs text-slate-400 mt-4">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-4">
               <Calendar size={12} />
               Bergabung {new Date(user.createdAt).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
             </div>
@@ -375,13 +376,13 @@ export default function UserProfilePage({
         </Card>
 
         {/* Tabs */}
-        <div className="flex gap-2 border-b bg-white rounded-t-lg px-4 pt-4">
+        <div className="flex flex-wrap gap-1 sm:gap-2 border-b border-border bg-card rounded-t-lg px-2 sm:px-4 pt-3 sm:pt-4">
           <button
             onClick={() => setActiveTab('products')}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex min-w-0 flex-wrap items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'products'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             <ShoppingBag size={16} />
@@ -393,10 +394,10 @@ export default function UserProfilePage({
           </button>
           <button
             onClick={() => setActiveTab('reviews')}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex min-w-0 flex-wrap items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'reviews'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             <MessageCircle size={16} />
@@ -405,40 +406,43 @@ export default function UserProfilePage({
         </div>
 
         {/* Tab Content */}
-        <div className="bg-white rounded-b-lg border border-t-0 p-4 space-y-4">
+        <div className="bg-card rounded-b-lg border border-t-0 p-4 space-y-4">
           {activeTab === 'products' ? (
             <>
               {/* Status Filter Pills for Seller / Owner */}
               {isOwner && (
                 <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b">
-                  <span className="text-xs font-semibold text-slate-500 mr-1">Filter Status:</span>
+                  <span className="text-xs font-semibold text-muted-foreground mr-1">Filter Status:</span>
                   {[
                     { key: 'ALL', label: 'Semua', count: user.productCounts?.total ?? (user.allProducts?.length || 0) },
-                    { key: 'ACTIVE', label: '✅ Aktif', count: user.productCounts?.active ?? (user.activeProducts?.length || 0) },
-                    { key: 'PENDING_PAYMENT', label: '⏳ Direview', count: user.productCounts?.pending ?? 0 },
-                    { key: 'REJECTED', label: '❌ Ditolak', count: user.productCounts?.rejected ?? 0 },
+                    { key: 'ACTIVE', label: 'Aktif', count: user.productCounts?.active ?? (user.activeProducts?.length || 0) },
+                    { key: 'PENDING_PAYMENT', label: 'Direview', count: user.productCounts?.pending ?? 0 },
+                    { key: 'REJECTED', label: 'Ditolak', count: user.productCounts?.rejected ?? 0 },
                     { key: 'SOLD', label: 'Terjual', count: user.productCounts?.sold ?? user.soldCount ?? 0 },
                   ].map(({ key, label, count }) => (
                     <button
                       key={key}
                       type="button"
                       onClick={() => setProductStatusFilter(key)}
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
+                      className={`px-3 py-2 rounded-full text-xs font-medium transition-colors flex min-w-0 flex-wrap items-center gap-1.5 ${
                         productStatusFilter === key
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'bg-muted text-muted-foreground hover:bg-muted'
                       }`}
                     >
+                      {key === 'ACTIVE' && <CheckCircle2 size={13} aria-hidden="true" />}
+                      {key === 'PENDING_PAYMENT' && <Clock size={13} aria-hidden="true" />}
+                      {key === 'REJECTED' && <AlertCircle size={13} aria-hidden="true" />}
                       <span>{label}</span>
                       <span
-                        className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
                           productStatusFilter === key
-                            ? 'bg-white/30 text-white'
+                            ? 'bg-primary-foreground/20 text-primary-foreground'
                             : key === 'PENDING_PAYMENT' && count > 0
-                            ? 'bg-amber-500 text-white'
+                            ? 'bg-warning/10 text-warning'
                             : key === 'REJECTED' && count > 0
-                            ? 'bg-red-500 text-white'
-                            : 'bg-slate-200 text-slate-700'
+                            ? 'bg-destructive text-primary-foreground'
+                            : 'bg-muted text-foreground'
                         }`}
                       >
                         {count}
@@ -460,8 +464,8 @@ export default function UserProfilePage({
 
                 if (displayedProducts.length === 0) {
                   return (
-                    <div className="text-center py-10 text-slate-500">
-                      <ShoppingBag className="mx-auto mb-2 text-slate-300" size={40} />
+                    <div className="text-center py-10 text-muted-foreground">
+                      <ShoppingBag className="mx-auto mb-2 text-muted-foreground" size={40} />
                       <p className="font-medium text-sm">
                         {productStatusFilter === 'ALL'
                           ? 'Belum ada barang di akun ini'
@@ -471,7 +475,7 @@ export default function UserProfilePage({
                         <Button
                           size="sm"
                           onClick={() => router.push('/products/new')}
-                          className="mt-3 bg-blue-600 hover:bg-blue-700"
+                          className="mt-3 bg-primary hover:bg-primary/90"
                         >
                           + Jual Barang Sekarang
                         </Button>
@@ -481,33 +485,33 @@ export default function UserProfilePage({
                 }
 
                 return (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
                     {displayedProducts.map((product: any) => (
-                      <div key={product.id} className="flex flex-col">
+                      <div key={product.id} className="flex min-w-0 flex-col">
                         <ProductCard product={product} />
 
                         {/* Status Note & Action for Owner */}
                         {isOwner && product.status === 'PENDING_PAYMENT' && (
-                          <div className="mt-2 p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] space-y-1">
-                            <div className="flex items-center gap-1 font-semibold text-amber-700">
+                          <div className="mt-2 p-2 rounded-lg bg-warning/10 border border-warning/30 text-warning text-[11px] space-y-1">
+                            <div className="flex items-center gap-1 font-semibold text-warning">
                               <Clock size={12} />
                               Sedang Direview Admin
                             </div>
-                            <p className="text-[10px] text-amber-600">
+                            <p className="text-[10px] text-warning">
                               Bukti transfer Anda sedang diverifikasi admin sebelum tampil di katalog.
                             </p>
                           </div>
                         )}
 
                         {isOwner && product.status === 'REJECTED' && (
-                          <div className="mt-2 p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-900 text-xs space-y-1.5 shadow-sm">
-                            <div className="flex items-center gap-1 font-bold text-red-700">
-                              <AlertCircle size={14} className="text-red-600 shrink-0" />
+                          <div className="mt-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs space-y-1.5 shadow-sm">
+                            <div className="flex items-center gap-1 font-bold text-destructive">
+                              <AlertCircle size={14} className="text-destructive shrink-0" />
                               Pembayaran Ditolak Admin
                             </div>
-                            <div className="bg-white/80 p-1.5 rounded border border-red-200">
-                              <p className="text-[10px] text-slate-500 font-semibold">Alasan Penolakan:</p>
-                              <p className="text-[11px] text-red-700 font-medium mt-0.5">
+                            <div className="bg-card/80 p-1.5 rounded border border-destructive/30">
+                              <p className="text-[10px] text-muted-foreground font-semibold">Alasan Penolakan:</p>
+                              <p className="text-[11px] text-destructive font-medium mt-0.5">
                                 {product.rejectionReason || 'Bukti transfer tidak valid atau belum masuk.'}
                               </p>
                             </div>
@@ -515,9 +519,9 @@ export default function UserProfilePage({
                               size="sm"
                               variant="outline"
                               onClick={() => router.push(`/products/${product.id}/edit`)}
-                              className="w-full text-[11px] h-7 bg-white text-red-700 border-red-300 hover:bg-red-100 font-semibold"
+                              className="w-full whitespace-normal text-xs h-auto min-h-10 py-2 bg-card text-destructive border-destructive/30 hover:bg-destructive/10 font-semibold"
                             >
-                              Edit / Upload Ulang Bukti →
+                              Edit / Upload Ulang Bukti
                             </Button>
                           </div>
                         )}
@@ -530,22 +534,22 @@ export default function UserProfilePage({
           ) : (
             <div className="space-y-4">
               {reviews.length === 0 ? (
-                <div className="text-center py-8 text-slate-500">
-                  <Star className="mx-auto mb-2 text-slate-300" size={40} />
+                <div className="text-center py-8 text-muted-foreground">
+                  <Star className="mx-auto mb-2 text-muted-foreground" size={40} />
                   <p>Belum ada ulasan</p>
                 </div>
               ) : (
                 reviews.map((review) => (
-                  <Card key={review.id} className="border-slate-200">
+                  <Card key={review.id} className="border-border">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 font-medium text-sm">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <div className="shrink-0 w-8 h-8 bg-muted rounded-full flex items-center justify-center text-muted-foreground font-medium text-sm">
                             {review.buyer?.name?.charAt(0).toUpperCase() || 'P'}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm text-slate-800">
+                          <div className="min-w-0 break-words">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-medium text-sm text-foreground">
                                 {review.buyer?.name || 'Pembeli'}
                               </span>
                               <div className="flex items-center gap-0.5">
@@ -555,21 +559,21 @@ export default function UserProfilePage({
                                     size={12}
                                     className={
                                       i < review.score
-                                        ? 'fill-amber-400 text-amber-400'
-                                        : 'text-slate-200'
+                                        ? 'fill-warning text-warning'
+                                        : 'text-muted-foreground'
                                     }
                                   />
                                 ))}
                               </div>
                             </div>
-                            <p className="text-sm text-slate-600 mt-1">{review.comment}</p>
-                            <p className="text-xs text-slate-400 mt-2">
+                            <p className="text-sm text-muted-foreground mt-1">{review.comment}</p>
+                            <p className="text-xs text-muted-foreground mt-2">
                               {new Date(review.createdAt).toLocaleDateString('id-ID', {
                                 day: 'numeric',
                                 month: 'short',
                                 year: 'numeric',
                               })}
-                              {review.product?.title && ` • ${review.product.title}`}
+                              {review.product?.title && <span className="mt-1 block">{review.product.title}</span>}
                             </p>
                           </div>
                         </div>
@@ -585,17 +589,18 @@ export default function UserProfilePage({
 
       {/* Edit Profile Modal */}
       {isEditOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
-                <Edit3 size={18} className="text-blue-600" />
+        <Modal open={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit Profil Akun">
+          <div className="bg-card text-foreground rounded-xl shadow-xl max-w-md min-w-0 w-full p-4 sm:p-6 space-y-4 max-h-[calc(100dvh-2*max(1rem,env(safe-area-inset-top),env(safe-area-inset-bottom)))] overflow-y-auto overscroll-contain">
+            <div className="flex min-w-0 items-start justify-between gap-3 border-b border-border pb-3">
+              <h3 id="edit-profile-title" className="min-w-0 font-bold text-lg text-foreground flex items-center gap-2">
+                <Edit3 size={18} className="text-primary" />
                 Edit Profil Akun
               </h3>
               <button
                 type="button"
                 onClick={() => setIsEditOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                aria-label="Tutup edit profil"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
               >
                 <X size={20} />
               </button>
@@ -604,8 +609,8 @@ export default function UserProfilePage({
             <form onSubmit={handleSaveProfile} className="space-y-4">
               {/* Avatar Upload */}
               <div className="flex flex-col items-center gap-1 pb-2">
-                <label className="cursor-pointer relative block w-20 h-20" title="Ketuk untuk ganti foto profil">
-                  <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-blue-100 bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-2xl">
+                <label className="group cursor-pointer relative block w-20 h-20 rounded-full focus-within:ring-2 focus-within:ring-ring" title="Ketuk untuk ganti foto profil">
+                  <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-primary/30 bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">
                     {avatarPreview ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={avatarPreview} alt="Preview avatar" className="w-full h-full object-cover" />
@@ -614,27 +619,28 @@ export default function UserProfilePage({
                     )}
                   </div>
                   {/* Hover overlay */}
-                  <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                  <div className="absolute inset-0 rounded-full bg-foreground/60 flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                     {uploadingAvatar
-                      ? <Loader2 className="animate-spin text-white" size={22} />
-                      : <Camera className="text-white" size={22} />}
+                      ? <Loader2 className="animate-spin motion-reduce:animate-none text-primary-foreground" size={22} />
+                      : <Camera className="text-primary-foreground" size={22} />}
                   </div>
                   <input
                     type="file"
                     accept="image/*"
-                    className="hidden"
+                    className="sr-only"
+                    aria-label="Ganti foto profil"
                     onChange={handleAvatarChange}
                     disabled={uploadingAvatar || savingProfile}
                   />
                 </label>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-muted-foreground">
                   {uploadingAvatar ? 'Mengunggah foto...' : 'Ketuk untuk ganti foto profil'}
                 </p>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="editName" className="text-xs font-semibold text-slate-700">
-                  Nama Lengkap <span className="text-rose-500">*</span>
+                <Label htmlFor="editName" className="text-xs font-semibold text-foreground">
+                  Nama Lengkap <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="editName"
@@ -646,11 +652,11 @@ export default function UserProfilePage({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="editPhone" className="text-xs font-semibold text-slate-700">
-                  Nomor WhatsApp <span className="text-rose-500">*</span>
+                <Label htmlFor="editPhone" className="text-xs font-semibold text-foreground">
+                  Nomor WhatsApp <span className="text-destructive">*</span>
                 </Label>
                 <div className="relative">
-                  <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="editPhone"
                     value={editPhone}
@@ -660,13 +666,13 @@ export default function UserProfilePage({
                     required
                   />
                 </div>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-muted-foreground">
                   Nomor ini digunakan pembeli untuk menghubungi Anda via pesan otomatis WA saat janjian COD.
                 </p>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="editCampus" className="text-xs font-semibold text-slate-700">
+                <Label htmlFor="editCampus" className="text-xs font-semibold text-foreground">
                   Asal Kampus
                 </Label>
                 <Input
@@ -678,7 +684,7 @@ export default function UserProfilePage({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="editFaculty" className="text-xs font-semibold text-slate-700">
+                <Label htmlFor="editFaculty" className="text-xs font-semibold text-foreground">
                   Fakultas / Jurusan
                 </Label>
                 <Input
@@ -689,24 +695,24 @@ export default function UserProfilePage({
                 />
               </div>
 
-              <div className="flex gap-2 pt-2 border-t">
+              <div className="flex flex-col-reverse gap-2 pt-2 border-t border-border sm:flex-row">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setIsEditOpen(false)}
-                  className="flex-1"
+                  className="min-w-0 flex-1"
                   disabled={savingProfile}
                 >
                   Batal
                 </Button>
                 <Button
                   type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 gap-1.5"
+                  className="flex-1 bg-primary hover:bg-primary/90 gap-1.5"
                   disabled={savingProfile}
                 >
                   {savingProfile ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" />
+                      <Loader2 size={16} className="animate-spin motion-reduce:animate-none" />
                       Menyimpan...
                     </>
                   ) : (
@@ -719,7 +725,7 @@ export default function UserProfilePage({
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   )

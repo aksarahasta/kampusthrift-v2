@@ -54,47 +54,47 @@ function LoginContent() {
   }
 
   return (
-    <Card className="w-full max-w-md shadow-lg border-slate-200">
-      <CardHeader className="text-center">
-        <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
-          <span className="text-2xl font-bold text-blue-600">KT</span>
+    <Card className="min-w-0 w-full max-w-md shadow-sm border-border">
+      <CardHeader className="min-w-0 p-4 sm:p-6 text-center">
+        <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+          <span className="text-2xl font-bold text-primary">KT</span>
         </div>
-        <CardTitle className="text-2xl font-bold text-slate-800">Masuk Akun</CardTitle>
-        <CardDescription>
+        <CardTitle className="min-w-0 leading-snug [&_svg]:shrink-0 text-xl sm:text-2xl font-bold text-foreground">Masuk Akun</CardTitle>
+        <CardDescription className="break-words">
           Selamat datang kembali di Kampus Thrift
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="min-w-0 p-4 pt-0 sm:p-6 sm:pt-0">
         {isVerified && (
-          <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-md text-emerald-700 text-sm flex items-center gap-2">
-            <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+          <div className="mb-4 p-3 bg-success/10 border border-border rounded-md text-success text-sm flex items-center gap-2">
+            <CheckCircle2 size={16} className="text-success shrink-0" />
             <span>Akun berhasil diverifikasi! Silakan masuk dengan kredensial Anda.</span>
           </div>
         )}
 
         {errorMessage && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+          <div className="mb-4 p-3 bg-destructive/10 border border-border rounded-md text-destructive text-sm">
             {errorMessage}
           </div>
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-1">
+          <div className="min-w-0 space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
               placeholder="nama@email.com"
               {...register('email')}
-              disabled={loading}
+              disabled={loading} className="min-h-11 text-base sm:text-sm"
             />
             {errors.email && (
-              <p className="text-xs text-red-500">{errors.email.message}</p>
+              <p className="text-xs text-destructive">{errors.email.message}</p>
             )}
           </div>
 
-          <div className="space-y-1">
-            <div className="flex justify-between items-center">
+          <div className="min-w-0 space-y-2">
+            <div className="flex flex-wrap justify-between items-center gap-2">
               <Label htmlFor="password">Password</Label>
             </div>
             <Input
@@ -102,14 +102,14 @@ function LoginContent() {
               type="password"
               placeholder="••••••••"
               {...register('password')}
-              disabled={loading}
+              disabled={loading} className="min-h-11 text-base sm:text-sm"
             />
             {errors.password && (
-              <p className="text-xs text-red-500">{errors.password.message}</p>
+              <p className="text-xs text-destructive">{errors.password.message}</p>
             )}
           </div>
 
-          <Button type="submit" className="w-full mt-2" disabled={loading}>
+          <Button type="submit" className="min-h-11 w-full mt-2" disabled={loading}>
             {loading ? (
               <>
                 <Loader2 size={16} className="animate-spin mr-2" />
@@ -124,10 +124,10 @@ function LoginContent() {
           </Button>
         </form>
       </CardContent>
-      <CardFooter className="flex justify-center border-t border-slate-100 pt-4">
-        <p className="text-sm text-slate-600">
+      <CardFooter className="gap-2 flex flex-wrap justify-center text-center border-t border-border pt-4">
+        <p className="text-sm text-muted-foreground">
           Belum punya akun?{' '}
-          <Link href="/register" className="text-blue-600 font-semibold hover:underline">
+          <Link href="/register" className="text-primary font-semibold hover:underline">
             Daftar di sini
           </Link>
         </p>
@@ -138,7 +138,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-4 py-8 sm:py-12">
       <Suspense fallback={<div>Memuat...</div>}>
         <LoginContent />
       </Suspense>

@@ -58,43 +58,43 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <Card className="w-full max-w-md shadow-lg border-slate-200">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
-            <span className="text-2xl font-bold text-blue-600">KT</span>
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-4 py-8 sm:py-12">
+      <Card className="min-w-0 w-full max-w-md shadow-sm border-border">
+        <CardHeader className="min-w-0 p-4 sm:p-6 text-center">
+          <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+            <span className="text-2xl font-bold text-primary">KT</span>
           </div>
-          <CardTitle className="text-2xl font-bold text-slate-800">Daftar Akun Baru</CardTitle>
-          <CardDescription>
+          <CardTitle className="min-w-0 leading-snug [&_svg]:shrink-0 text-xl sm:text-2xl font-bold text-foreground">Daftar Akun Baru</CardTitle>
+          <CardDescription className="break-words">
             Bergabung dengan komunitas jual-beli & barter kampus
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0 p-4 pt-0 sm:p-6 sm:pt-0">
           {errorMessage && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+            <div className="mb-4 p-3 bg-destructive/10 border border-border rounded-md text-destructive text-sm">
               {errorMessage}
             </div>
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-1">
+            <div className="min-w-0 space-y-2">
               <Label htmlFor="name">Nama Lengkap</Label>
               <Input
                 id="name"
                 placeholder="cth. Budi Santoso"
                 {...register('name')}
-                disabled={loading}
+                disabled={loading} className="min-h-11 text-base sm:text-sm"
               />
               {errors.name && (
-                <p className="text-xs text-red-500">{errors.name.message}</p>
+                <p className="text-xs text-destructive">{errors.name.message}</p>
               )}
             </div>
 
-            <div className="space-y-1">
-              <div className="flex justify-between items-center">
+            <div className="min-w-0 space-y-2">
+              <div className="flex flex-wrap justify-between items-center gap-2">
                 <Label htmlFor="email">Email</Label>
                 {isStudent && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full border border-border">
                     <GraduationCap size={13} />
                     Email Kampus Terdeteksi
                   </span>
@@ -105,15 +105,15 @@ export default function RegisterPage() {
                 type="email"
                 placeholder="nama@kampus.ac.id atau email@domain.com"
                 {...register('email')}
-                disabled={loading}
+                disabled={loading} className="min-h-11 text-base sm:text-sm"
               />
               {errors.email && (
-                <p className="text-xs text-red-500">{errors.email.message}</p>
+                <p className="text-xs text-destructive">{errors.email.message}</p>
               )}
 
               {isStudent && (
-                <div className="mt-2 p-2.5 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-700 flex items-start gap-2">
-                  <CheckCircle2 size={16} className="text-blue-600 shrink-0 mt-0.5" />
+                <div className="mt-2 p-2.5 bg-primary/10 border border-border rounded-md text-xs text-primary flex items-start gap-2">
+                  <CheckCircle2 size={16} className="text-primary shrink-0 mt-0.5" />
                   <span>
                     Gunakan email <strong>.ac.id</strong> untuk otomatis mendapatkan <strong>Verified Student Badge</strong> dan akses fitur <strong>Barter</strong>!
                   </span>
@@ -121,48 +121,48 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <div className="space-y-1">
+            <div className="min-w-0 space-y-2">
               <Label htmlFor="phoneWhatsapp">Nomor WhatsApp</Label>
               <Input
                 id="phoneWhatsapp"
                 placeholder="cth. 081234567890"
                 {...register('phoneWhatsapp')}
-                disabled={loading}
+                disabled={loading} className="min-h-11 text-base sm:text-sm"
               />
               {errors.phoneWhatsapp && (
-                <p className="text-xs text-red-500">{errors.phoneWhatsapp.message}</p>
+                <p className="text-xs text-destructive">{errors.phoneWhatsapp.message}</p>
               )}
             </div>
 
-            <div className="space-y-1">
+            <div className="min-w-0 space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
                 placeholder="Minimal 8 karakter (huruf besar, kecil, angka)"
                 {...register('password')}
-                disabled={loading}
+                disabled={loading} className="min-h-11 text-base sm:text-sm"
               />
               {errors.password && (
-                <p className="text-xs text-red-500">{errors.password.message}</p>
+                <p className="text-xs text-destructive">{errors.password.message}</p>
               )}
             </div>
 
-            <div className="space-y-1">
+            <div className="min-w-0 space-y-2">
               <Label htmlFor="confirmPassword">Konfirmasi Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 placeholder="Ulangi password"
                 {...register('confirmPassword')}
-                disabled={loading}
+                disabled={loading} className="min-h-11 text-base sm:text-sm"
               />
               {errors.confirmPassword && (
-                <p className="text-xs text-red-500">{errors.confirmPassword.message}</p>
+                <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>
               )}
             </div>
 
-            <Button type="submit" className="w-full mt-2" disabled={loading}>
+            <Button type="submit" className="min-h-11 w-full mt-2" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 size={16} className="animate-spin mr-2" />
@@ -177,10 +177,10 @@ export default function RegisterPage() {
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex justify-center border-t border-slate-100 pt-4">
-          <p className="text-sm text-slate-600">
+        <CardFooter className="gap-2 flex flex-wrap justify-center text-center border-t border-border pt-4">
+          <p className="text-sm text-muted-foreground">
             Sudah punya akun?{' '}
-            <Link href="/login" className="text-blue-600 font-semibold hover:underline">
+            <Link href="/login" className="text-primary font-semibold hover:underline">
               Masuk di sini
             </Link>
           </p>

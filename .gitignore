@@ -45,3 +45,5 @@ docs/PRD.md
 docs/SRS.md
 claude.md
 TODO.md
+.agents/
+.hallmark/

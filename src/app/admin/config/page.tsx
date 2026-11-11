@@ -95,19 +95,19 @@ export default function AdminConfigPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-blue-600" size={32} />
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <Loader2 className="animate-spin text-primary" size={32} />
       </div>
     )
   }
 
   if (!session?.user || session.user.role !== Role.ADMIN) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full p-6 text-center">
-          <AlertCircle className="mx-auto text-red-500 mb-2" size={40} />
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+        <Card className="min-w-0 max-w-md w-full p-6 text-center">
+          <AlertCircle className="mx-auto text-destructive mb-2" size={40} />
           <h2 className="text-xl font-bold">Akses Ditolak</h2>
-          <Button onClick={() => router.push('/')} className="mt-4 w-full">
+          <Button onClick={() => router.push('/')} className="min-h-11 mt-4 w-full">
             Kembali
           </Button>
         </Card>
@@ -116,42 +116,42 @@ export default function AdminConfigPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4">
-      <div className="max-w-3xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background text-foreground py-6 sm:py-10">
+      <div className="container min-w-0 space-y-6">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => router.push('/admin')}
-          className="gap-2 text-slate-600"
+          className="min-h-11 h-auto justify-start whitespace-normal gap-2 text-muted-foreground"
         >
           <ArrowLeft size={16} />
           Kembali ke Dashboard Admin
         </Button>
 
-        <Card className="shadow-md border-slate-200">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center">
+        <Card className="min-w-0 shadow-sm border-border">
+          <CardHeader className="min-w-0 p-4 sm:p-6">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="w-10 h-10 shrink-0 bg-primary/10 text-primary rounded-lg flex items-center justify-center">
                 <Tag size={22} />
               </div>
-              <div>
-                <CardTitle className="text-2xl font-bold text-slate-800">
+              <div className="min-w-0 flex-1">
+                <CardTitle className="min-w-0 leading-snug [&_svg]:shrink-0 text-xl sm:text-2xl font-bold text-foreground">
                   Konfigurasi Biaya Listing (Pay-per-Listing)
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="break-words">
                   Atur tarif biaya pasang produk yang wajib dibayar penjual di awal sebelum barang tayang di katalog
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="min-w-0 p-4 pt-0 sm:p-6 sm:pt-0 space-y-6">
             {message && (
               <div
                 className={`p-4 rounded-md text-sm flex items-center gap-2 ${
                   message.type === 'success'
-                    ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
-                    : 'bg-red-50 border border-red-200 text-red-600'
+                    ? 'bg-success/10 border border-border text-success'
+                    : 'bg-destructive/10 border border-border text-destructive'
                 }`}
               >
                 {message.type === 'success' ? (
@@ -165,23 +165,23 @@ export default function AdminConfigPage() {
 
             <form onSubmit={handleSave} className="space-y-6">
               {/* Listing Fee Setting */}
-              <div className="space-y-3 p-5 bg-emerald-50/60 border border-emerald-200 rounded-xl">
-                <div className="flex items-center justify-between">
+              <div className="space-y-3 p-5 bg-primary/10 rounded-md">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <Label htmlFor="listingFee" className="text-base font-bold text-emerald-950">
+                    <Label htmlFor="listingFee" className="text-base font-bold text-success">
                       Tarif Biaya Pasang Iklan Produk (Listing Fee)
                     </Label>
-                    <p className="text-xs text-emerald-700 mt-0.5">
+                    <p className="text-xs text-success mt-0.5">
                       Nominal yang harus dibayar penjual setiap kali mengupload 1 barang baru.
                     </p>
                   </div>
-                  <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-200 text-emerald-800 rounded-full">
+                  <span className="text-xs font-semibold px-2.5 py-1 bg-success/10 text-success rounded-full">
                     Model Utama
                   </span>
                 </div>
 
                 <div className="relative max-w-sm mt-2">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">
                     Rp
                   </span>
                   <Input
@@ -192,7 +192,7 @@ export default function AdminConfigPage() {
                     max="100000"
                     value={listingFee}
                     onChange={(e) => setListingFee(parseInt(e.target.value) || 0)}
-                    className="pl-10 text-lg font-bold text-emerald-900 bg-white border-emerald-300"
+                    className="min-h-11 text-base sm:text-sm pl-10 text-lg font-bold text-success bg-card border-border"
                   />
                 </div>
 
@@ -202,10 +202,11 @@ export default function AdminConfigPage() {
                       key={preset}
                       type="button"
                       onClick={() => setListingFee(preset)}
-                      className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
+                      aria-pressed={listingFee === preset}
+                      className={`min-h-11 text-sm px-3 py-2 rounded-md border transition-colors ${
                         listingFee === preset
-                          ? 'bg-emerald-600 text-white border-emerald-600 font-semibold'
-                          : 'bg-white text-slate-600 border-slate-300 hover:bg-emerald-50'
+                          ? 'bg-primary text-primary-foreground border-primary font-semibold'
+                          : 'bg-card text-muted-foreground border-border hover:bg-success/10'
                       }`}
                     >
                       {preset === 0 ? 'Gratis (Rp 0 Promo)' : formatRupiah(preset)}
@@ -215,12 +216,12 @@ export default function AdminConfigPage() {
               </div>
 
               {/* Benefit / Explanation Box */}
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-2 text-xs text-slate-600">
-                <div className="font-semibold text-slate-800 flex items-center gap-1.5 text-sm">
-                  <ShieldCheck size={16} className="text-blue-600" />
+              <div className="p-4 bg-muted rounded-md space-y-2 text-xs text-muted-foreground">
+                <div className="font-semibold text-foreground flex items-center gap-1.5 text-sm">
+                  <ShieldCheck size={16} className="text-primary" />
                   Keunggulan Model Pay-per-Listing untuk KampusThrift:
                 </div>
-                <ul className="list-disc list-inside space-y-1 text-slate-600">
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                   <li><strong>Pendapatan Pasti:</strong> Platform langsung menerima pemasukan di muka setiap ada produk yang dipasang tanpa perlu menunggu barang laku.</li>
                   <li><strong>Harga Transparan:</strong> Pembeli melihat harga murni dari penjual tanpa markup terselubung.</li>
                   <li><strong>Kualitas Listing Terjaga:</strong> Mencegah penjual iseng mengupload barang spam atau tidak bermutu.</li>
@@ -228,16 +229,16 @@ export default function AdminConfigPage() {
               </div>
 
               {/* Revenue Projection Calculator */}
-              <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-lg space-y-3">
+              <div className="p-4 bg-muted rounded-md space-y-3">
                 <div className="flex items-center gap-2">
-                  <Calculator size={18} className="text-blue-600" />
-                  <h4 className="font-semibold text-sm text-blue-900">
+                  <Calculator size={18} className="text-primary" />
+                  <h4 className="font-semibold text-sm text-primary">
                     Simulasi Estimasi Pendapatan Platform
                   </h4>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <Label htmlFor="simUploads" className="text-xs shrink-0 text-slate-700">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Label htmlFor="simUploads" className="text-sm text-foreground">
                     Jumlah Upload Produk / Bulan:
                   </Label>
                   <Input
@@ -247,28 +248,28 @@ export default function AdminConfigPage() {
                     min="1"
                     value={simUploads}
                     onChange={(e) => setSimUploads(parseInt(e.target.value) || 0)}
-                    className="h-8 max-w-[120px] bg-white text-xs font-semibold"
+                    className="min-h-11 text-base sm:text-sm h-11 max-w-[120px] bg-card text-xs font-semibold"
                   />
-                  <span className="text-xs text-slate-500">produk</span>
+                  <span className="text-xs text-muted-foreground">produk</span>
                 </div>
 
-                <div className="bg-white p-3 rounded border border-blue-200 space-y-1.5 text-xs">
-                  <div className="flex justify-between text-slate-600">
+                <div className="border-t border-border pt-3 space-y-3 text-sm">
+                  <div className="flex flex-wrap justify-between gap-2 text-muted-foreground">
                     <span>Tarif Listing per Produk:</span>
                     <span className="font-semibold">{formatRupiah(listingFee)}</span>
                   </div>
-                  <div className="flex justify-between text-slate-600">
+                  <div className="flex flex-wrap justify-between gap-2 text-muted-foreground">
                     <span>Estimasi Postingan Aktif:</span>
                     <span className="font-semibold">{simUploads} barang</span>
                   </div>
-                  <div className="border-t pt-1.5 flex justify-between font-bold text-emerald-800 text-sm">
+                  <div className="border-t border-border pt-3 flex flex-wrap gap-2 justify-between font-bold text-success text-sm">
                     <span>Pendapatan Kotor Platform:</span>
-                    <span className="text-emerald-600 text-base">{formatRupiah(listingFee * simUploads)}</span>
+                    <span className="text-success text-base">{formatRupiah(listingFee * simUploads)}</span>
                   </div>
                 </div>
               </div>
 
-              <Button type="submit" className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white h-11" disabled={saving}>
+              <Button type="submit" className="min-h-11 w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground h-auto py-3 whitespace-normal" disabled={saving}>
                 {saving ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />

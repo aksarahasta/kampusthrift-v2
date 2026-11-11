@@ -14,14 +14,16 @@ export function StudentBadge({
   className,
 }: StudentBadgeProps) {
   const iconSize = size === 'sm' ? 12 : 14
-  const textSize = size === 'sm' ? 'text-[10px]' : 'text-xs'
+  const textSize = 'text-xs'
 
   return (
     <Badge
       variant="default"
-      className={`bg-blue-600 hover:bg-blue-700 text-white gap-1 font-medium ${textSize} ${className || ''}`}
+      className={`bg-primary text-primary-foreground gap-1 font-medium ${textSize} ${className || ''}`}
+            title="Mahasiswa terverifikasi"
+            aria-label={!showText ? 'Mahasiswa terverifikasi' : undefined}
     >
-      <GraduationCap size={iconSize} />
+      <GraduationCap size={iconSize} aria-hidden="true" />
       {showText && <span>Verified Student</span>}
     </Badge>
   )

@@ -4,6 +4,7 @@ import React, { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StudentBadge } from '@/components/shared/student-badge'
@@ -26,7 +27,9 @@ import {
   RefreshCw,
   ShieldCheck,
   Star,
-  User
+  User,
+  LockKeyhole,
+  Ban
 } from 'lucide-react'
 import { formatRupiah, generateWhatsAppLink } from '@/lib/utils'
 import { ProductCategory, ProductStatus } from '@prisma/client'
@@ -151,8 +154,8 @@ export default function ProductDetailPage({
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
-        <Loader2 className="animate-spin text-blue-600" size={32} />
-        <p className="text-sm text-slate-500 mt-2">Memuat detail produk...</p>
+        <Loader2 className="animate-spin motion-reduce:animate-none text-primary" size={32} />
+        <p className="text-sm text-muted-foreground mt-2">Memuat detail produk...</p>
       </div>
     )
   }
@@ -161,9 +164,9 @@ export default function ProductDetailPage({
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <Card className="max-w-md w-full p-6 text-center space-y-4">
-          <AlertCircle className="mx-auto text-red-500" size={48} />
-          <h2 className="text-xl font-bold text-slate-800">Produk Tidak Ditemukan</h2>
-          <p className="text-sm text-slate-600">{error || 'Barang mungkin sudah dihapus atau tidak tersedia.'}</p>
+          <AlertCircle className="mx-auto text-destructive" size={48} />
+          <h2 className="text-xl font-bold text-foreground">Produk Tidak Ditemukan</h2>
+          <p className="text-sm text-muted-foreground">{error || 'Barang mungkin sudah dihapus atau tidak tersedia.'}</p>
           <Button onClick={() => router.push('/products')} className="w-full">
             Kembali ke Katalog
           </Button>
@@ -175,10 +178,10 @@ export default function ProductDetailPage({
   const isOwner = session?.user?.id === product.seller.id
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
+    <div className="min-h-screen bg-background pb-[calc(16rem+env(safe-area-inset-bottom))] lg:pb-[calc(7rem+env(safe-area-inset-bottom))]">
       {/* Top Navigation */}
-      <div className="bg-white border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="bg-card border-b border-border relative z-10">
+        <div className="container mx-auto py-3 flex min-w-0 flex-wrap items-center justify-between gap-3">
           <Button
             variant="ghost"
             size="sm"
@@ -189,37 +192,37 @@ export default function ProductDetailPage({
             Kembali
           </Button>
           <div className="flex gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="icon" aria-label="Bagikan produk" className="h-11 w-11">
               <Share2 size={16} />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="icon" aria-label="Simpan produk" className="h-11 w-11">
               <Heart size={16} />
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto py-5 sm:py-8">
         {product.status === ProductStatus.PENDING_PAYMENT && (
-          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-3">
-            <span className="text-xl">⏳</span>
+          <div className="mb-6 p-4 rounded-xl bg-warning/10 border border-warning/30 text-warning flex items-start gap-3">
+            <Clock size={22} className="shrink-0" aria-hidden="true" />
             <div>
               <p className="font-semibold text-sm">Menunggu Validasi Admin</p>
-              <p className="text-xs text-amber-700 mt-0.5">
+              <p className="text-xs text-warning mt-0.5">
                 Bukti transfer pembayaran listing fee Anda sedang diperiksa oleh admin. Produk ini akan otomatis tampil di katalog setelah disetujui.
               </p>
             </div>
           </div>
         )}
         {product.status === ProductStatus.REJECTED && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 flex items-start gap-3 shadow-sm">
-            <span className="text-2xl shrink-0">❌</span>
-            <div className="flex-1 space-y-2">
+          <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive flex items-start gap-3 shadow-sm">
+            <AlertCircle size={24} className="shrink-0" aria-hidden="true" />
+            <div className="min-w-0 flex-1 space-y-2 break-words">
               <div>
-                <p className="font-bold text-sm text-red-800">Pembayaran Ditolak oleh Admin</p>
-                <div className="mt-1.5 p-2.5 bg-white/90 rounded-lg border border-red-200">
-                  <p className="text-xs text-slate-500 font-semibold">Alasan Penolakan dari Admin:</p>
-                  <p className="text-xs text-red-700 font-medium mt-0.5">
+                <p className="font-bold text-sm text-destructive">Pembayaran Ditolak oleh Admin</p>
+                <div className="mt-1.5 p-2.5 bg-card/90 rounded-lg border border-destructive/30">
+                  <p className="text-xs text-muted-foreground font-semibold">Alasan Penolakan dari Admin:</p>
+                  <p className="text-xs text-destructive font-medium mt-0.5">
                     {product.rejectionReason || 'Bukti transfer tidak valid atau nominal pembayaran tidak sesuai.'}
                   </p>
                 </div>
@@ -229,7 +232,7 @@ export default function ProductDetailPage({
                   <Button
                     size="sm"
                     onClick={() => router.push(`/products/${product.id}/edit`)}
-                    className="text-xs bg-red-600 hover:bg-red-700 text-white font-medium"
+                    className="h-auto min-h-11 w-full whitespace-normal text-xs bg-destructive hover:bg-destructive/90 text-primary-foreground font-medium sm:w-auto"
                   >
                     Edit &amp; Upload Ulang Bukti Pembayaran
                   </Button>
@@ -238,16 +241,17 @@ export default function ProductDetailPage({
             </div>
           </div>
         )}
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-2 lg:gap-8">
           {/* Media Gallery Section */}
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             {/* Main Media Display */}
-            <div className="relative aspect-square bg-slate-100 rounded-xl overflow-hidden border">
+            <div className="relative aspect-square bg-muted rounded-xl overflow-hidden border border-border">
               {showVideo && video ? (
                 <video
                   src={video.mediaUrl}
                   controls
-                  autoPlay
+                  playsInline
+                  poster={images[0]?.mediaUrl}
                   className="w-full h-full object-contain"
                 />
               ) : images.length > 0 ? (
@@ -258,7 +262,7 @@ export default function ProductDetailPage({
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-400">
+                <div className="flex items-center justify-center h-full text-muted-foreground">
                   Tidak ada gambar
                 </div>
               )}
@@ -267,14 +271,16 @@ export default function ProductDetailPage({
               {!showVideo && images.length > 1 && (
                 <>
                   <button
+                    aria-label="Foto sebelumnya"
                     onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center bg-card/80 hover:bg-card rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <ChevronLeft size={20} />
                   </button>
                   <button
+                    aria-label="Foto berikutnya"
                     onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center bg-card/80 hover:bg-card rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <ChevronRight size={20} />
                   </button>
@@ -284,8 +290,10 @@ export default function ProductDetailPage({
               {/* Video Badge */}
               {video && !showVideo && (
                 <button
+                  aria-label="Lihat video bukti kondisi"
+                  aria-pressed={showVideo}
                   onClick={() => setShowVideo(true)}
-                  className="absolute bottom-3 right-3 bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 hover:bg-purple-700 transition-colors"
+                  className="absolute bottom-3 right-3 bg-primary text-primary-foreground px-3 py-2 rounded-lg text-sm font-medium flex min-h-11 min-w-0 items-center gap-1.5 whitespace-nowrap hover:bg-primary/90 transition-colors"
                 >
                   <PlayCircle size={14} />
                   Lihat Video Bukti
@@ -294,28 +302,33 @@ export default function ProductDetailPage({
 
               {/* Status Overlay */}
               {product.status !== ProductStatus.ACTIVE && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-foreground/60 flex items-center justify-center p-4">
                   <Badge
                     variant={
                       product.status === ProductStatus.PENDING_PAYMENT
                         ? 'outline'
                         : 'destructive'
                     }
-                    className={`text-sm px-4 py-2 ${
+                    className={`max-w-full whitespace-normal text-center text-sm px-4 py-2 ${
                       product.status === ProductStatus.PENDING_PAYMENT
-                        ? 'bg-amber-500 text-white border-transparent'
+                        ? 'bg-card text-warning border-warning/30'
                         : ''
                     }`}
                   >
+                    {product.status === ProductStatus.SOLD ? <CheckCircle2 size={16} className="mr-2 shrink-0" />
+                      : product.status === ProductStatus.RESERVED ? <LockKeyhole size={16} className="mr-2 shrink-0" />
+                      : product.status === ProductStatus.PENDING_PAYMENT ? <Clock size={16} className="mr-2 shrink-0" />
+                      : product.status === ProductStatus.REJECTED ? <AlertCircle size={16} className="mr-2 shrink-0" />
+                      : <Ban size={16} className="mr-2 shrink-0" />}
                     {product.status === ProductStatus.SOLD
-                      ? '✓ Terjual'
+                      ? 'Terjual'
                       : product.status === ProductStatus.RESERVED
-                        ? '🔒 Dipesan'
+                        ? 'Dipesan'
                         : product.status === ProductStatus.PENDING_PAYMENT
-                          ? '⏳ Menunggu Validasi Pembayaran'
+                          ? 'Menunggu Validasi Pembayaran'
                           : product.status === ProductStatus.REJECTED
-                            ? '❌ Pembayaran Ditolak'
-                            : '🚫 Tidak Tersedia'}
+                            ? 'Pembayaran Ditolak'
+                            : 'Tidak Tersedia'}
                   </Badge>
                 </div>
               )}
@@ -325,25 +338,29 @@ export default function ProductDetailPage({
             <div className="flex gap-2 overflow-x-auto pb-2">
               {video && (
                 <button
+                  aria-label="Lihat video bukti kondisi"
+                  aria-pressed={showVideo}
                   onClick={() => setShowVideo(true)}
                   className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${
-                    showVideo ? 'border-purple-600' : 'border-slate-200'
+                    showVideo ? 'border-primary' : 'border-border'
                   }`}
                 >
-                  <div className="w-full h-full bg-purple-100 flex items-center justify-center">
-                    <PlayCircle className="text-purple-600" size={20} />
+                  <div className="w-full h-full bg-primary/10 flex items-center justify-center">
+                    <PlayCircle className="text-primary" size={20} />
                   </div>
                 </button>
               )}
               {images.map((img, idx) => (
                 <button
                   key={img.id}
+                  aria-label={`Lihat foto ${idx + 1}`}
+                  aria-pressed={!showVideo && currentImageIndex === idx}
                   onClick={() => {
                     setShowVideo(false)
                     setCurrentImageIndex(idx)
                   }}
                   className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${
-                    !showVideo && currentImageIndex === idx ? 'border-blue-600' : 'border-slate-200'
+                    !showVideo && currentImageIndex === idx ? 'border-primary' : 'border-border'
                   }`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -358,14 +375,14 @@ export default function ProductDetailPage({
           </div>
 
           {/* Product Details Section */}
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             {/* Header */}
             <Card>
               <CardContent className="p-4 space-y-3">
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline">{categoryLabels[product.category]}</Badge>
                   {product.isBarter && (
-                    <Badge className="bg-purple-600 text-white gap-1">
+                    <Badge className="bg-primary text-primary-foreground gap-1">
                       <RefreshCw size={12} />
                       Terima Barter
                     </Badge>
@@ -373,21 +390,21 @@ export default function ProductDetailPage({
                   {product.seller.isVerifiedStudent && <StudentBadge size="sm" />}
                 </div>
 
-                <h1 className="text-2xl font-bold text-slate-900 leading-tight">
+                <h1 className="text-xl sm:text-2xl font-bold text-foreground leading-tight">
                   {product.title}
                 </h1>
 
-                <div className="text-3xl font-bold text-blue-600">
+                <div className="break-words text-2xl sm:text-3xl font-bold text-primary">
                   {formatRupiah(product.displayPrice)}
                 </div>
 
-                <div className="flex items-center gap-4 text-sm text-slate-600">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
-                    <MapPin size={14} className="text-slate-400" />
+                    <MapPin size={14} className="text-muted-foreground" />
                     <span>{product.campusName}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Clock size={14} className="text-slate-400" />
+                    <Clock size={14} className="text-muted-foreground" />
                     <span>{new Date(product.createdAt).toLocaleDateString('id-ID', {
                       day: 'numeric',
                       month: 'short',
@@ -399,26 +416,26 @@ export default function ProductDetailPage({
             </Card>
 
             {/* Seller Card */}
-            <Card className="cursor-pointer hover:border-blue-300 transition-colors" onClick={() => router.push(`/users/${product.seller.id}`)}>
+            <Card className="cursor-pointer hover:border-primary/30 transition-colors" onClick={() => router.push(`/users/${product.seller.id}`)}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <User size={16} />
                   Informasi Penjual
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold text-sm">
                       {product.seller.name.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-slate-800">{product.seller.name}</span>
+                    <div className="min-w-0 break-words">
+                      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                        <span className="font-semibold text-foreground">{product.seller.name}</span>
                         {product.seller.isVerifiedStudent && <StudentBadge size="sm" showText={false} />}
                       </div>
                       {product.seller.campusName && (
-                        <p className="text-xs text-slate-500">{product.seller.campusName}</p>
+                        <p className="text-xs text-muted-foreground">{product.seller.campusName}</p>
                       )}
                     </div>
                   </div>
@@ -428,7 +445,7 @@ export default function ProductDetailPage({
                     showCount={true}
                   />
                 </div>
-                <p className="text-xs text-blue-600 text-right">Lihat Profil →</p>
+                <p className="text-xs text-primary text-right">Lihat Profil</p>
               </CardContent>
             </Card>
 
@@ -436,22 +453,22 @@ export default function ProductDetailPage({
             <Card>
               <CardContent className="p-4 space-y-3">
                 <div>
-                  <h4 className="text-xs font-semibold text-slate-500 uppercase mb-1">Kondisi Fisik</h4>
+                  <h4 className="text-xs font-semibold text-muted-foreground mb-1">Kondisi Fisik</h4>
                   <div className="flex items-center gap-3">
-                    <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-emerald-500 rounded-full transition-all"
+                        className="h-full bg-primary rounded-full"
                         style={{ width: `${product.conditionPercentage}%` }}
                       />
                     </div>
-                    <span className="font-bold text-emerald-600">{product.conditionPercentage}%</span>
+                    <span className="font-bold text-success">{product.conditionPercentage}%</span>
                   </div>
                 </div>
 
                 {product.isBarter && product.barterTarget && (
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <p className="text-xs font-medium text-purple-900 mb-1">Target Barter:</p>
-                    <p className="text-sm text-purple-800">{product.barterTarget}</p>
+                  <div className="p-3 bg-primary/10 border border-primary/30 rounded-lg">
+                    <p className="text-xs font-medium text-primary mb-1">Target Barter:</p>
+                    <p className="text-sm text-primary">{product.barterTarget}</p>
                   </div>
                 )}
               </CardContent>
@@ -460,31 +477,31 @@ export default function ProductDetailPage({
             {/* Description */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-700">Deskripsi</CardTitle>
+                <CardTitle className="text-sm font-semibold text-foreground">Deskripsi</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                <p className="break-words text-sm text-foreground whitespace-pre-wrap leading-relaxed">
                   {product.description}
                 </p>
               </CardContent>
             </Card>
 
             {/* COD Zone */}
-            <Card className="bg-emerald-50 border-emerald-200">
+            <Card className="bg-success/10 border-success/30">
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <ShieldCheck className="text-emerald-600 shrink-0" size={20} />
+                  <ShieldCheck className="text-success shrink-0" size={20} />
                   <div>
-                    <h4 className="font-semibold text-emerald-900 text-sm">COD Safe Zone</h4>
-                    <p className="text-emerald-800 text-sm mt-0.5">
+                    <h4 className="font-semibold text-success text-sm">COD Safe Zone</h4>
+                    <p className="text-success text-sm mt-0.5">
                       {product.codZone.locationName}, {product.codZone.campusName}
                     </p>
                     {product.codZone.description && (
-                      <p className="text-xs text-emerald-600 mt-1">
+                      <p className="text-xs text-success mt-1">
                         {product.codZone.description}
                       </p>
                     )}
-                    <Badge variant="outline" className="mt-2 text-xs border-emerald-300 text-emerald-700">
+                    <Badge variant="outline" className="mt-2 text-xs border-success/30 text-success">
                       Rp 0 Ongkir
                     </Badge>
                   </div>
@@ -497,7 +514,7 @@ export default function ProductDetailPage({
               <Button
                 onClick={handleWhatsAppContact}
                 size="lg"
-                className="w-full h-14 text-base font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
+                className="hidden lg:flex w-full h-auto min-h-12 whitespace-normal py-3 text-base font-semibold gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
               >
                 <MessageCircle size={22} />
                 {session?.user ? 'Hubungi Penjual via WhatsApp' : 'Masuk untuk Transaksi via WA'}
@@ -509,17 +526,17 @@ export default function ProductDetailPage({
 
       {/* Sticky Bottom Action Bar */}
       {product.status === ProductStatus.ACTIVE && !isOwner && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50 p-4">
-          <div className="container mx-auto flex items-center gap-3">
-            <div className="flex-1">
-              <p className="text-xs text-slate-500">Harga Total</p>
-              <p className="text-xl font-bold text-blue-600">
+        <div className="product-action-bar fixed left-0 right-0 bg-card border-t border-border shadow-lg z-40 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          <div className="container mx-auto flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted-foreground">Harga Total</p>
+              <p className="text-xl font-bold text-primary">
                 {formatRupiah(product.displayPrice)}
               </p>
             </div>
             <Button
               onClick={handleWhatsAppContact}
-              className="flex-1 h-12 text-base gap-2 bg-green-600 hover:bg-green-700"
+              className="min-w-0 flex-1 h-auto min-h-12 whitespace-normal py-3 text-sm sm:text-base gap-2 bg-primary hover:bg-primary/90"
             >
               <MessageCircle size={18} />
               {session?.user ? 'Hubungi via WhatsApp' : 'Masuk untuk Chat WA'}
@@ -530,15 +547,15 @@ export default function ProductDetailPage({
 
       {/* Buyer Review Action if SOLD and no review yet */}
       {product.status === ProductStatus.SOLD && !isOwner && !product.review && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50 p-4">
-          <div className="container mx-auto flex items-center justify-between gap-4">
+        <div className="product-action-bar fixed left-0 right-0 bg-card border-t border-border shadow-lg z-40 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          <div className="container mx-auto flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
             <div>
-              <p className="text-sm font-semibold text-slate-800">Barang ini sudah terjual</p>
-              <p className="text-xs text-slate-500">Apakah Anda pembelinya? Berikan ulasan untuk membantu penjual</p>
+              <p className="text-sm font-semibold text-foreground">Barang ini sudah terjual</p>
+              <p className="text-xs text-muted-foreground">Apakah Anda pembelinya? Berikan ulasan untuk membantu penjual</p>
             </div>
             <Button
               onClick={() => setShowReviewModal(true)}
-              className="h-10 text-sm gap-2 bg-amber-500 hover:bg-amber-600"
+              className="h-auto min-h-11 whitespace-normal py-2 text-sm gap-2 bg-primary hover:bg-primary/90"
             >
               <Star size={16} />
               Beri Ulasan
@@ -549,7 +566,7 @@ export default function ProductDetailPage({
 
       {/* Review Modal Dialog */}
       {showReviewModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <Modal open={showReviewModal} onClose={() => setShowReviewModal(false)} title="Beri rating transaksi">
           <ReviewModal
             productId={product.id}
             productTitle={product.title}
@@ -560,23 +577,23 @@ export default function ProductDetailPage({
               router.refresh()
             }}
           />
-        </div>
+        </Modal>
       )}
 
       {/* Owner Actions */}
       {isOwner && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50 p-4">
-          <div className="container mx-auto flex gap-3">
+        <div className="product-action-bar fixed left-0 right-0 bg-card border-t border-border shadow-lg z-40 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          <div className="container mx-auto flex flex-wrap gap-2 sm:gap-3">
             <Button
               variant="outline"
-              className="flex-1 h-12"
+              className="min-w-0 flex-1 h-auto min-h-12 whitespace-normal px-3 py-2 text-sm"
               onClick={() => router.push(`/products/${product.id}/edit`)}
             >
               Edit Listing
             </Button>
             <Button
               variant="destructive"
-              className="flex-1 h-12"
+              className="min-w-0 flex-1 h-auto min-h-12 whitespace-normal px-3 py-2 text-sm"
               onClick={async () => {
                 if (confirm('Tandai barang ini sebagai TERJUAL?')) {
                   await fetch(`/api/products/${product.id}`, {

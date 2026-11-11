@@ -154,19 +154,19 @@ export default function AdminCodZonesPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-blue-600" size={32} />
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <Loader2 className="animate-spin text-primary" size={32} />
       </div>
     )
   }
 
   if (!session?.user || session.user.role !== Role.ADMIN) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full p-6 text-center">
-          <AlertCircle className="mx-auto text-red-500 mb-2" size={40} />
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+        <Card className="min-w-0 max-w-md w-full p-6 text-center">
+          <AlertCircle className="mx-auto text-destructive mb-2" size={40} />
           <h2 className="text-xl font-bold">Akses Ditolak</h2>
-          <Button onClick={() => router.push('/')} className="mt-4 w-full">
+          <Button onClick={() => router.push('/')} className="min-h-11 mt-4 w-full">
             Kembali
           </Button>
         </Card>
@@ -182,14 +182,14 @@ export default function AdminCodZonesPage() {
   }, {} as Record<string, CodZone[]>)
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-background text-foreground py-6 sm:py-10">
+      <div className="container min-w-0 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push('/admin')}
-            className="gap-2 text-slate-600"
+            className="min-h-11 h-auto justify-start whitespace-normal gap-2 text-muted-foreground"
           >
             <ArrowLeft size={16} />
             Kembali ke Dashboard Admin
@@ -197,71 +197,71 @@ export default function AdminCodZonesPage() {
 
           <Button
             onClick={() => setShowForm(true)}
-            className="gap-2"
+            className="min-h-11 gap-2"
           >
             <Plus size={16} />
             Tambah COD Zone
           </Button>
         </div>
 
-        <Card className="shadow-md border-slate-200">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-              <MapPin className="text-blue-600" size={24} />
+        <Card className="min-w-0 shadow-sm border-border">
+          <CardHeader className="min-w-0 p-4 sm:p-6">
+            <CardTitle className="min-w-0 leading-snug [&_svg]:shrink-0 text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
+              <MapPin className="text-primary" size={24} />
               Kelola COD Safe Zones
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="break-words">
               Titik temu aman transaksi di lingkungan kampus yang direkomendasikan kepada penjual dan pembeli
             </CardDescription>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="min-w-0 p-4 pt-0 sm:p-6 sm:pt-0">
             {/* Add/Edit Form */}
             {showForm && (
-              <form onSubmit={handleSave} className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-4">
-                <h4 className="font-semibold text-sm text-blue-900">
+              <form onSubmit={handleSave} className="mb-6 p-4 bg-muted rounded-md space-y-4">
+                <h4 className="font-semibold text-sm text-primary">
                   {editingZone ? 'Edit COD Safe Zone' : 'Tambah COD Safe Zone Baru'}
                 </h4>
                 <div className="grid sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
+                  <div className="min-w-0 space-y-2">
                     <Label htmlFor="campus" className="text-xs">Nama Kampus</Label>
                     <Input
                       id="campus"
                       value={formData.campusName}
                       onChange={(e) => setFormData({ ...formData, campusName: e.target.value })}
                       placeholder="cth. Universitas Indonesia"
-                      className="h-8 text-sm bg-white"
+                      className="min-h-11 text-base sm:text-sm h-11 text-sm bg-card"
                       required
                     />
                   </div>
-                  <div className="space-y-1">
+                  <div className="min-w-0 space-y-2">
                     <Label htmlFor="location" className="text-xs">Nama Lokasi</Label>
                     <Input
                       id="location"
                       value={formData.locationName}
                       onChange={(e) => setFormData({ ...formData, locationName: e.target.value })}
                       placeholder="cth. Perpustakaan Pusat UI"
-                      className="h-8 text-sm bg-white"
+                      className="min-h-11 text-base sm:text-sm h-11 text-sm bg-card"
                       required
                     />
                   </div>
                 </div>
-                <div className="space-y-1">
+                <div className="min-w-0 space-y-2">
                   <Label htmlFor="desc" className="text-xs">Deskripsi (Opsional)</Label>
                   <Input
                     id="desc"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="cth. Area lobi depan, ramai dan terang"
-                    className="h-8 text-sm bg-white"
+                    className="min-h-11 text-base sm:text-sm h-11 text-sm bg-card"
                   />
                 </div>
-                <div className="flex gap-2 pt-2">
-                  <Button type="submit" size="sm" disabled={saving} className="gap-2">
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <Button type="submit" size="sm" disabled={saving} className="min-h-11 gap-2">
                     {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                     {editingZone ? 'Simpan Perubahan' : 'Tambah Zone'}
                   </Button>
-                  <Button type="button" variant="ghost" size="sm" onClick={cancelEdit} className="gap-2">
+                  <Button type="button" variant="ghost" size="sm" onClick={cancelEdit} className="min-h-11 gap-2">
                     <X size={14} />
                     Batal
                   </Button>
@@ -271,18 +271,18 @@ export default function AdminCodZonesPage() {
 
             {/* Zones List grouped by campus */}
             {Object.keys(groupedZones).length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
-                <MapPin className="mx-auto text-slate-300 mb-2" size={40} />
+              <div className="text-center py-12 text-muted-foreground">
+                <MapPin className="mx-auto text-muted-foreground mb-2" size={40} />
                 <p>Belum ada COD Safe Zone yang terdaftar.</p>
               </div>
             ) : (
               <div className="space-y-6">
                 {Object.entries(groupedZones).map(([campus, campusZones]) => (
                   <div key={campus}>
-                    <h4 className="font-semibold text-sm text-slate-700 mb-3 flex items-center gap-2">
-                      <MapPin size={14} className="text-blue-600" />
+                    <h4 className="font-semibold text-sm text-foreground mb-3 flex flex-wrap items-center gap-2">
+                      <MapPin size={14} className="text-primary" />
                       {campus}
-                      <Badge variant="outline" className="text-[10px]">
+                      <Badge variant="outline" className="text-xs">
                         {campusZones.length} lokasi
                       </Badge>
                     </h4>
@@ -290,30 +290,30 @@ export default function AdminCodZonesPage() {
                       {campusZones.map((zone) => (
                         <div
                           key={zone.id}
-                          className={`p-3 border rounded-lg flex items-start justify-between ${
+                          className={`min-w-0 p-4 rounded-md flex flex-col gap-3 items-start justify-between ${
                             zone.isActive
-                              ? 'bg-white border-slate-200'
-                              : 'bg-slate-100 border-slate-200 opacity-60'
+                              ? 'bg-muted'
+                              : 'bg-muted text-muted-foreground'
                           }`}
                         >
-                          <div>
-                            <p className="font-medium text-sm text-slate-800">{zone.locationName}</p>
+                          <div className="min-w-0 break-words">
+                            <p className="font-medium text-sm text-foreground">{zone.locationName}</p>
                             {zone.description && (
-                              <p className="text-xs text-slate-500 mt-0.5">{zone.description}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{zone.description}</p>
                             )}
                             <Badge
                               variant={zone.isActive ? 'default' : 'secondary'}
-                              className="text-[10px] mt-2"
+                              className="text-xs mt-2"
                             >
                               {zone.isActive ? 'Aktif' : 'Nonaktif'}
                             </Badge>
                           </div>
-                          <div className="flex gap-1">
+                          <div className="flex flex-wrap gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => startEdit(zone)}
-                              className="h-7 w-7 p-0"
+                              className="min-h-11 h-11 w-11 shrink-0 p-0"
                               title="Edit"
                             >
                               <Edit2 size={12} />
@@ -322,7 +322,7 @@ export default function AdminCodZonesPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleToggleActive(zone)}
-                              className="h-7 w-7 p-0"
+                              className="min-h-11 h-11 w-11 shrink-0 p-0"
                               title={zone.isActive ? 'Nonaktifkan' : 'Aktifkan'}
                             >
                               {zone.isActive ? <X size={12} /> : <Check size={12} />}
@@ -331,7 +331,7 @@ export default function AdminCodZonesPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDelete(zone.id)}
-                              className="h-7 w-7 p-0 text-red-500 hover:text-red-600"
+                              className="min-h-11 h-11 w-11 shrink-0 p-0 text-destructive hover:text-destructive"
                               title="Hapus"
                             >
                               <Trash2 size={12} />

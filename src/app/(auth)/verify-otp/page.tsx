@@ -109,31 +109,31 @@ function OtpContent() {
   }
 
   return (
-    <Card className="w-full max-w-md shadow-lg border-slate-200">
-      <CardHeader className="text-center">
-        <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+    <Card className="min-w-0 w-full max-w-md shadow-sm border-border">
+      <CardHeader className="min-w-0 p-4 sm:p-6 text-center">
+        <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
           {isSuccess ? (
-            <CheckCircle2 size={28} className="text-emerald-600" />
+            <CheckCircle2 size={28} className="text-success" />
           ) : (
-            <GraduationCap size={28} className="text-blue-600" />
+            <GraduationCap size={28} className="text-primary" />
           )}
         </div>
-        <CardTitle className="text-2xl font-bold text-slate-800">
+        <CardTitle className="min-w-0 leading-snug [&_svg]:shrink-0 text-xl sm:text-2xl font-bold text-foreground">
           {isSuccess ? 'Verifikasi Berhasil!' : 'Verifikasi Kode OTP'}
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="break-words">
           {isSuccess
             ? 'Akun Anda telah berhasil diverifikasi'
             : `Masukkan 6-digit kode OTP yang telah dikirim ke ${emailParam || 'email Anda'}`}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="min-w-0 p-4 pt-0 sm:p-6 sm:pt-0">
         {message && (
           <div
             className={`mb-4 p-3 rounded-md text-sm ${
               message.type === 'success'
-                ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
-                : 'bg-red-50 border border-red-200 text-red-600'
+                ? 'bg-success/10 border border-border text-success'
+                : 'bg-destructive/10 border border-border text-destructive'
             }`}
           >
             {message.text}
@@ -143,20 +143,20 @@ function OtpContent() {
         {isSuccess ? (
           <div className="space-y-4 text-center py-4">
             {isStudentVerified && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <span className="text-2xl mb-2 block">🎓</span>
-                <h4 className="font-semibold text-blue-900">Selamat! Verified Student Aktif</h4>
-                <p className="text-xs text-blue-700 mt-1">
+              <div className="p-4 bg-primary/10 border border-border rounded-lg">
+                <GraduationCap size={28} className="mx-auto mb-2 text-primary" aria-hidden="true" />
+                <h4 className="font-semibold text-primary">Selamat! Verified Student Aktif</h4>
+                <p className="text-xs text-primary mt-1">
                   Anda telah mendapatkan badge resmi mahasiswa dan dapat menggunakan fitur barter barang preloved!
                 </p>
               </div>
             )}
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               Mengalihkan Anda ke halaman login dalam 3 detik...
             </p>
             <Button
               onClick={() => router.push('/login')}
-              className="w-full"
+              className="min-h-11 w-full"
             >
               Masuk Sekarang
             </Button>
@@ -165,7 +165,7 @@ function OtpContent() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <input type="hidden" {...register('email')} />
 
-            <div className="space-y-1">
+            <div className="min-w-0 space-y-2">
               <Label htmlFor="otpCode" className="text-center block text-sm font-medium">
                 Kode Verifikasi (6 Digit)
               </Label>
@@ -173,16 +173,18 @@ function OtpContent() {
                 id="otpCode"
                 placeholder="123456"
                 maxLength={6}
-                className="text-center text-2xl tracking-[0.5em] font-mono h-14"
+                inputMode="numeric"
+                                autoComplete="one-time-code"
+                                className="h-12 text-center text-2xl tracking-[0.3em] sm:tracking-[0.5em] tabular-nums"
                 {...register('otpCode')}
                 disabled={loading}
               />
               {errors.otpCode && (
-                <p className="text-xs text-red-500 text-center">{errors.otpCode.message}</p>
+                <p className="text-xs text-destructive text-center">{errors.otpCode.message}</p>
               )}
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="min-h-11 w-full" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 size={16} className="animate-spin mr-2" />
@@ -199,8 +201,8 @@ function OtpContent() {
         )}
       </CardContent>
       {!isSuccess && (
-        <CardFooter className="flex flex-col gap-2 border-t border-slate-100 pt-4 text-center">
-          <p className="text-xs text-slate-500">
+        <CardFooter className="gap-2 flex flex-col border-t border-border pt-4 text-center">
+          <p className="text-xs text-muted-foreground">
             Tidak menerima kode? Periksa folder spam atau
           </p>
           <Button
@@ -209,7 +211,7 @@ function OtpContent() {
             size="sm"
             onClick={handleResendOtp}
             disabled={resending}
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs"
+            className="min-h-11 text-primary hover:text-primary hover:bg-primary/10 text-sm"
           >
             {resending ? (
               <>
@@ -231,7 +233,7 @@ function OtpContent() {
 
 export default function VerifyOtpPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-4 py-8 sm:py-12">
       <Suspense fallback={<div>Memuat...</div>}>
         <OtpContent />
       </Suspense>

@@ -1,14 +1,15 @@
 import React from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
+
 import { StudentBadge } from '@/components/shared/student-badge'
 import { HonestyScore } from '@/components/shared/honesty-score'
-import { MapPin, RefreshCw, Clock } from 'lucide-react'
+import { MapPin, RefreshCw, Clock, Video, ImageIcon } from 'lucide-react'
 import { formatRupiah } from '@/lib/utils'
 import { ProductCategory, ProductStatus } from '@prisma/client'
 
 interface ProductCardProps {
+  priority?: boolean
   product: {
     id: string
     title: string
@@ -47,100 +48,105 @@ const categoryLabels: Record<ProductCategory, string> = {
   LAIN_LAIN: 'Lain-lain',
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, priority = false }: ProductCardProps) {
   const mediaList = product.media || []
   const primaryImage = mediaList.find((m) => m.isPrimary && m.mediaType === 'IMAGE') || mediaList.find((m) => m.mediaType === 'IMAGE')
   const hasVideo = mediaList.some((m) => m.mediaType === 'VIDEO')
   const seller = product.seller || { name: 'Penjual', isVerifiedStudent: false, honestyScore: 0 }
 
   return (
-    <Link href={`/products/${product.id}`}>
-      <Card className="group overflow-hidden border-slate-200 hover:shadow-lg transition-all duration-200 hover:border-blue-300 h-full">
+    <Link href={`/products/${product.id}`} className="product-link">
+      <article className="product-tile">
         {/* Image Container */}
-        <div className="relative aspect-square bg-slate-100 overflow-hidden">
+        <div className="product-media">
           {primaryImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={primaryImage.mediaUrl}
               alt={product.title}
-              className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+              className="object-cover w-full h-full"
+                            width={480}
+                            height={480}
+                            loading={priority ? 'eager' : 'lazy'}
+                                          fetchPriority={priority ? 'high' : undefined}
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-slate-400">
-              <span className="text-sm">Tidak ada gambar</span>
+            <div className="flex h-full flex-col items-center justify-center gap-2 p-3 text-center text-muted-foreground">
+              <ImageIcon size={24} aria-hidden="true" />
+              <span className="text-xs">Tidak ada gambar</span>
             </div>
           )}
 
           {/* Badges Overlay */}
           <div className="absolute top-2 left-2 flex flex-col gap-1">
             {product.isBarter && (
-              <Badge variant="secondary" className="bg-purple-600 text-white text-[10px] gap-1">
-                <RefreshCw size={10} />
+              <Badge variant="secondary" className="bg-primary text-primary-foreground text-xs gap-1">
+                <RefreshCw size={12} aria-hidden="true" />
                 Barter
               </Badge>
             )}
             {hasVideo && (
-              <Badge variant="secondary" className="bg-slate-800 text-white text-[10px]">
-                📹 Ada Video
+              <Badge variant="secondary" className="gap-1 bg-foreground text-background text-xs">
+                <Video size={12} aria-hidden="true" /> Ada Video
               </Badge>
             )}
             {seller.isVerifiedStudent && (
-              <StudentBadge size="sm" showText={false} className="bg-blue-600" />
+              <StudentBadge size="sm" showText={false} className="bg-primary" />
             )}
           </div>
 
           {/* Status Badge */}
           {product.status !== 'ACTIVE' && (
-            <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-2 text-center">
+            <div className="absolute inset-0 bg-foreground/70 flex items-center justify-center p-2 text-center">
               <Badge
                 variant={product.status === 'PENDING_PAYMENT' ? 'outline' : 'destructive'}
                 className={`text-xs font-semibold px-2.5 py-1 ${
                   product.status === 'PENDING_PAYMENT'
-                    ? 'bg-amber-500 text-white border-transparent'
+                    ? 'bg-warning text-primary-foreground border-transparent'
                     : product.status === 'REJECTED'
-                    ? 'bg-red-600 text-white border-transparent'
+                    ? 'bg-destructive text-destructive-foreground border-transparent'
                     : ''
                 }`}
               >
                 {product.status === 'SOLD'
-                  ? '✓ Terjual'
+                  ? 'Terjual'
                   : product.status === 'RESERVED'
-                  ? '🔒 Dipesan'
+                  ? 'Dipesan'
                   : product.status === 'PENDING_PAYMENT'
-                  ? '⏳ Sedang Direview'
+                  ? 'Sedang Direview'
                   : product.status === 'REJECTED'
-                  ? '❌ Ditolak Admin'
+                  ? 'Ditolak Admin'
                   : 'Tidak Tersedia'}
               </Badge>
             </div>
           )}
         </div>
 
-        <CardContent className="p-3 space-y-2">
+        <div className="product-info">
           {/* Title & Price */}
           <div>
-            <h3 className="font-semibold text-sm text-slate-800 line-clamp-2 leading-tight">
+            <h3 className="line-clamp-2">
               {product.title}
             </h3>
-            <p className="text-lg font-bold text-blue-600 mt-1">
+            <p className="product-price mt-1">
               {formatRupiah(product.displayPrice)}
             </p>
           </div>
 
           {/* Category & Condition */}
-          <div className="flex items-center gap-2 text-xs">
-            <Badge variant="outline" className="text-[10px]">
+          <div className="product-meta">
+            <Badge variant="outline" className="text-xs">
               {categoryLabels[product.category]}
             </Badge>
-            <span className="text-slate-500">
+            <span>
               Kondisi {product.conditionPercentage}%
             </span>
           </div>
 
           {/* Seller Info */}
-          <div className="flex items-center justify-between pt-1 border-t border-slate-100">
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-slate-600 truncate max-w-[100px]">
+          <div className="product-seller">
+            <div className="flex min-w-0 items-center gap-1">
+              <span className="max-w-[130px] truncate text-xs text-muted-foreground">
                 {seller.name}
               </span>
               {seller.isVerifiedStudent && (
@@ -155,18 +161,18 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
 
           {/* Location & Time */}
-          <div className="flex items-center justify-between text-[10px] text-slate-400">
-            <div className="flex items-center gap-1">
-              <MapPin size={10} />
-              <span className="truncate max-w-[120px]">{product.campusName}</span>
+          <div className="product-meta justify-between">
+            <div className="product-location">
+              <MapPin size={12} className="shrink-0" aria-hidden="true" />
+              <span className="truncate" title={product.campusName}>{product.campusName}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <Clock size={10} />
-              <span>{new Date(product.createdAt).toLocaleDateString('id-ID')}</span>
+            <div className="flex shrink-0 items-center gap-1">
+              <Clock size={12} aria-hidden="true" />
+              <time dateTime={new Date(product.createdAt).toISOString()}>{new Date(product.createdAt).toLocaleDateString('id-ID')}</time>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </article>
     </Link>
   )
 }

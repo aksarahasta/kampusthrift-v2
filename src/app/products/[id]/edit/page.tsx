@@ -279,8 +279,8 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   if (authStatus === 'loading' || initialLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
-        <Loader2 className="animate-spin text-blue-600 mb-2" size={32} />
-        <p className="text-sm text-slate-500">Memuat formulir edit listing...</p>
+        <Loader2 className="animate-spin motion-reduce:animate-none text-primary mb-2" size={32} />
+        <p className="text-sm text-muted-foreground">Memuat formulir edit listing...</p>
       </div>
     )
   }
@@ -289,9 +289,9 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <Card className="max-w-md w-full p-6 text-center space-y-4">
-          <AlertCircle className="mx-auto text-amber-500" size={48} />
+          <AlertCircle className="mx-auto text-warning" size={48} />
           <h2 className="text-xl font-bold">Harap Masuk Terlebih Dahulu</h2>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-muted-foreground">
             Anda harus masuk ke akun untuk mengedit listing barang Anda.
           </p>
           <Button onClick={() => router.push(`/login?callbackUrl=/products/${id}/edit`)} className="w-full">
@@ -303,61 +303,62 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4">
+    <div className="min-h-screen bg-background px-4 py-5 sm:px-6 sm:py-8">
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Back Link */}
         <Button
           variant="ghost"
           size="sm"
           onClick={() => router.push(`/products/${id}`)}
-          className="gap-2 text-slate-600 hover:text-slate-900"
+          className="gap-2 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft size={16} />
           Kembali ke Detail Produk
         </Button>
 
-        <Card className="shadow-md border-slate-200">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl font-bold text-slate-800">
+        <Card className="shadow-sm border-border">
+          <CardHeader className="p-4 sm:p-6">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-xl sm:text-2xl font-bold text-foreground">
                   Edit Listing Produk
                 </CardTitle>
                 <CardDescription>
                   Perbarui informasi barang preloved, status penjualan, harga, atau foto
                 </CardDescription>
               </div>
-              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+              <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
                 Mode Edit Penjual
               </Badge>
             </div>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6">
             {existingProduct?.status === 'REJECTED' && (
-              <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 space-y-3">
+              <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive space-y-3">
                 <div className="flex items-start gap-2.5">
-                  <span className="text-xl shrink-0">❌</span>
+                  <AlertCircle size={24} className="shrink-0" aria-hidden="true" />
                   <div>
-                    <p className="font-bold text-sm text-red-800">
+                    <p className="font-bold text-sm text-destructive">
                       Listing Ini Ditolak oleh Admin
                     </p>
-                    <div className="mt-1 p-2 bg-white rounded border border-red-200">
-                      <p className="text-[11px] text-slate-500 font-semibold">Alasan Penolakan dari Admin:</p>
-                      <p className="text-xs text-red-700 font-medium mt-0.5">
+                    <div className="mt-1 p-2 bg-card rounded border border-destructive/30">
+                      <p className="text-[11px] text-muted-foreground font-semibold">Alasan Penolakan dari Admin:</p>
+                      <p className="text-xs text-destructive font-medium mt-0.5">
                         {existingProduct.rejectionReason || 'Bukti transfer tidak valid atau belum masuk.'}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-3 bg-white rounded-lg border border-red-200 space-y-2">
-                  <Label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                <div className="p-3 bg-card rounded-lg border border-destructive/30 space-y-2">
+                  <Label className="text-xs font-semibold text-foreground flex min-w-0 flex-wrap items-center gap-1.5">
                     <Camera size={14} />
                     Unggah Bukti Transfer Baru untuk Validasi Ulang:
                   </Label>
                   <input
                     ref={proofInputRef}
+                    aria-label="Unggah bukti transfer baru"
                     type="file"
                     accept="image/*"
                     className="hidden"
@@ -376,12 +377,13 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                       <img
                         src={newProofPreview}
                         alt="Bukti Baru"
-                        className="w-full h-36 object-contain rounded border border-slate-200 bg-slate-50"
+                        className="w-full h-36 object-contain rounded border border-border bg-background"
                       />
                       <button
                         type="button"
+                        aria-label="Hapus bukti pembayaran"
                         onClick={() => { setNewProofFile(null); setNewProofPreview(null) }}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
+                        className="absolute top-1 right-1 bg-destructive text-primary-foreground rounded-full p-1"
                       >
                         <X size={12} />
                       </button>
@@ -390,12 +392,12 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                     <button
                       type="button"
                       onClick={() => proofInputRef.current?.click()}
-                      className="w-full border-2 border-dashed border-red-200 hover:border-red-400 rounded-lg p-3 text-center text-xs text-red-700 hover:bg-red-50/50"
+                      className="w-full border-2 border-dashed border-destructive/30 hover:border-destructive/30 rounded-lg p-3 text-center text-xs text-destructive hover:bg-destructive/10"
                     >
-                      Klik untuk memilih foto/screenshot bukti transfer baru
+                      Unggah bukti transfer baru
                     </button>
                   )}
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-muted-foreground">
                     Setelah Anda menyimpan perubahan, status produk akan otomatis kembali ke <strong>Menunggu Validasi</strong> agar admin dapat memeriksa ulang.
                   </p>
                 </div>
@@ -403,7 +405,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
             )}
 
             {errorMessage && (
-              <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm flex items-center gap-2">
+              <div className="mb-6 p-3 bg-destructive/10 border border-destructive/30 text-destructive rounded-md text-sm flex items-center gap-2">
                 <AlertCircle size={18} className="shrink-0" />
                 <span>{errorMessage}</span>
               </div>
@@ -411,50 +413,50 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {/* Status Listing */}
-              <div className="space-y-2 p-4 bg-blue-50/60 border border-blue-200 rounded-lg">
-                <Label htmlFor="status" className="font-semibold text-slate-800 text-sm">
+              <div className="space-y-2 p-4 bg-primary/10 border border-primary/30 rounded-lg">
+                <Label htmlFor="status" className="font-semibold text-foreground text-sm">
                   Status Ketersediaan Barang
                 </Label>
                 <select
                   id="status"
                   {...register('status')}
-                  className="w-full h-10 px-3 rounded-md border border-input bg-white text-sm font-medium"
+                  className="w-full min-w-0 h-11 px-3 rounded-md border border-input bg-card text-sm font-medium"
                 >
-                  <option value={ProductStatus.ACTIVE}>🟢 Aktif Dijual (ACTIVE)</option>
-                  <option value={ProductStatus.RESERVED}>🟡 Sedang Dipesan / Janjian COD (RESERVED)</option>
-                  <option value={ProductStatus.SOLD}>⚪ Sudah Terjual (SOLD)</option>
+                  <option value={ProductStatus.ACTIVE}>Aktif Dijual (ACTIVE)</option>
+                  <option value={ProductStatus.RESERVED}>Sedang Dipesan / Janjian COD (RESERVED)</option>
+                  <option value={ProductStatus.SOLD}>Sudah Terjual (SOLD)</option>
                 </select>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   Pilih "Sedang Dipesan" jika ada pembeli yang sedang janjian COD, atau "Sudah Terjual" jika transaksi selesai.
                 </p>
               </div>
 
               {/* Judul Barang */}
-              <div className="space-y-2">
-                <Label htmlFor="title" className="font-semibold text-slate-700">
-                  Judul Barang <span className="text-rose-500">*</span>
+              <div className="min-w-0 space-y-2">
+                <Label htmlFor="title" className="font-semibold text-foreground">
+                  Judul Barang <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="title"
                   placeholder="cth. Buku Kalkulus Edisi 9 Original / Kipas Angin Meja"
                   {...register('title')}
-                  className="bg-white"
+                  className="bg-card"
                 />
                 {errors.title && (
-                  <p className="text-xs text-red-500">{errors.title.message}</p>
+                  <p className="text-xs text-destructive">{errors.title.message}</p>
                 )}
               </div>
 
               {/* Kategori & Kondisi */}
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category" className="font-semibold text-slate-700">
-                    Kategori <span className="text-rose-500">*</span>
+              <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="min-w-0 space-y-2">
+                  <Label htmlFor="category" className="font-semibold text-foreground">
+                    Kategori <span className="text-destructive">*</span>
                   </Label>
                   <select
                     id="category"
                     {...register('category')}
-                    className="w-full h-10 px-3 rounded-md border border-input bg-white text-sm"
+                    className="w-full min-w-0 h-11 px-3 rounded-md border border-input bg-card text-sm"
                   >
                     <option value={ProductCategory.BUKU_KULIAH}>Buku Kuliah & Catatan</option>
                     <option value={ProductCategory.ALAT_KOS_RUMAH_TANGGA}>Alat Kos & RT</option>
@@ -463,16 +465,16 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                     <option value={ProductCategory.LAIN_LAIN}>Lain-lain</option>
                   </select>
                   {errors.category && (
-                    <p className="text-xs text-red-500">{errors.category.message}</p>
+                    <p className="text-xs text-destructive">{errors.category.message}</p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label htmlFor="conditionPercentage" className="font-semibold text-slate-700">
-                      Tingkat Kondisi Fisik <span className="text-rose-500">*</span>
+                <div className="min-w-0 space-y-2">
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <Label htmlFor="conditionPercentage" className="font-semibold text-foreground">
+                      Tingkat Kondisi Fisik <span className="text-destructive">*</span>
                     </Label>
-                    <span className="text-sm font-bold text-emerald-600">
+                    <span className="text-sm font-bold text-success">
                       {watchCondition || 85}%
                     </span>
                   </div>
@@ -483,9 +485,9 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                     step="1"
                     id="conditionPercentage"
                     {...register('conditionPercentage', { valueAsNumber: true })}
-                    className="w-full accent-blue-600 cursor-pointer"
+                    className="w-full accent-primary cursor-pointer"
                   />
-                  <div className="flex justify-between text-[11px] text-slate-400">
+                  <div className="flex flex-wrap justify-between gap-2 text-[11px] text-muted-foreground">
                     <span>Bekas pakai berat (50%)</span>
                     <span>Sangat mulus (95%)</span>
                   </div>
@@ -493,33 +495,33 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
               </div>
 
               {/* Deskripsi */}
-              <div className="space-y-2">
-                <Label htmlFor="description" className="font-semibold text-slate-700">
-                  Deskripsi Lengkap <span className="text-rose-500">*</span>
+              <div className="min-w-0 space-y-2">
+                <Label htmlFor="description" className="font-semibold text-foreground">
+                  Deskripsi Lengkap <span className="text-destructive">*</span>
                 </Label>
                 <textarea
                   id="description"
                   rows={4}
                   placeholder="Jelaskan kondisi detail barang, minus (jika ada), kelengkapan, dll..."
                   {...register('description')}
-                  className="w-full p-3 rounded-md border border-input bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  className="w-full min-w-0 p-3 rounded-md border border-input bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
                 {errors.description && (
-                  <p className="text-xs text-red-500">{errors.description.message}</p>
+                  <p className="text-xs text-destructive">{errors.description.message}</p>
                 )}
               </div>
 
               {/* Harga Jual Produk */}
-              <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                <div className="space-y-1">
-                  <Label htmlFor="basePrice" className="font-semibold text-slate-800">
-                    Harga Jual Produk (Rp) <span className="text-rose-500">*</span>
+              <div className="space-y-3 p-4 bg-background border border-border rounded-lg">
+                <div className="min-w-0 space-y-1">
+                  <Label htmlFor="basePrice" className="font-semibold text-foreground">
+                    Harga Jual Produk (Rp) <span className="text-destructive">*</span>
                   </Label>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted-foreground">
                     Harga yang ditampilkan ke calon pembeli di katalog (tanpa markup tersembunyi).
                   </p>
                   <div className="relative mt-2">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">
                       Rp
                     </span>
                     <Input
@@ -529,21 +531,21 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                       min="100"
                       placeholder="50000"
                       {...register('basePrice', { valueAsNumber: true })}
-                      className="pl-10 bg-white font-semibold text-slate-900"
+                      className="pl-10 bg-card font-semibold text-foreground"
                     />
                   </div>
                   {errors.basePrice && (
-                    <p className="text-xs text-red-500">{errors.basePrice.message}</p>
+                    <p className="text-xs text-destructive">{errors.basePrice.message}</p>
                   )}
                 </div>
               </div>
 
               {/* Barter Option */}
-              <div className="p-4 bg-purple-50/60 border border-purple-200 rounded-lg space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <RefreshCw className="text-purple-600" size={18} />
-                    <Label htmlFor="isBarter" className="font-semibold text-purple-900 cursor-pointer">
+              <div className="p-4 bg-primary/10 border border-primary/30 rounded-lg space-y-3">
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <RefreshCw className="text-primary" size={18} />
+                    <Label htmlFor="isBarter" className="font-semibold text-primary cursor-pointer">
                       Terima Opsi Barter / Tukar Barang
                     </Label>
                   </div>
@@ -552,13 +554,13 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                     id="isBarter"
                     {...register('isBarter')}
                     disabled={!isVerifiedStudent}
-                    className="h-4 w-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500 disabled:opacity-50"
+                    className="h-5 w-5 shrink-0 rounded border-border text-primary accent-primary focus:ring-ring disabled:opacity-50"
                   />
                 </div>
 
                 {!isVerifiedStudent ? (
-                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-800 flex items-start gap-2">
-                    <GraduationCap size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                  <div className="p-2.5 bg-warning/10 border border-warning/30 rounded-md text-xs text-warning flex items-start gap-2">
+                    <GraduationCap size={16} className="text-warning shrink-0 mt-0.5" />
                     <span>
                       Fitur Barter khusus untuk <strong>Verified Student</strong> (.ac.id).
                     </span>
@@ -566,14 +568,14 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 ) : (
                   watchIsBarter && (
                     <div className="space-y-1 pt-1">
-                      <Label htmlFor="barterTarget" className="text-xs text-purple-900">
+                      <Label htmlFor="barterTarget" className="text-xs text-primary">
                         Barang yang Anda Harapkan untuk Ditukar (Opsional)
                       </Label>
                       <Input
                         id="barterTarget"
                         placeholder="cth. Mau barter dengan helm bogo / novel"
                         {...register('barterTarget')}
-                        className="bg-white text-xs"
+                        className="bg-card text-xs"
                       />
                     </div>
                   )
@@ -581,22 +583,22 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
               </div>
 
               {/* Media Section */}
-              <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+              <div className="space-y-3 p-4 bg-background border border-border rounded-lg">
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                  <h4 className="text-sm font-semibold text-foreground flex min-w-0 flex-wrap items-center gap-1.5">
                     Foto & Video Produk
                   </h4>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     Minimal 1 foto produk. Anda dapat menambah atau menghapus media di bawah.
                   </p>
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-4 pt-2">
+                <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                   {/* Foto Upload */}
-                  <div className="border border-dashed border-slate-300 rounded-lg p-4 text-center bg-white">
-                    <Camera className="mx-auto text-blue-600 mb-2" size={28} />
-                    <p className="text-xs font-medium text-slate-700">Foto Barang ({images.length}/5)</p>
-                    <p className="text-[11px] text-slate-400 mb-3">Format JPG, PNG (Maks 10MB)</p>
+                  <div className="border border-dashed border-border rounded-lg p-4 text-center bg-card">
+                    <Camera className="mx-auto text-primary mb-2" size={28} />
+                    <p className="text-xs font-medium text-foreground">Foto Barang ({images.length}/5)</p>
+                    <p className="text-[11px] text-muted-foreground mb-3">Format JPG, PNG (Maks 10MB)</p>
 
                     <div className="flex flex-wrap gap-2 justify-center mb-3">
                       {images.map((img, idx) => (
@@ -605,24 +607,25 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                           <img src={img} alt="preview" className="object-cover w-full h-full" />
                           <button
                             type="button"
+                            aria-label={`Hapus foto ${idx + 1}`}
                             onClick={() => setImages(images.filter((_, i) => i !== idx))}
-                            className="absolute top-0 right-0 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-bl"
+                            className="absolute top-0 right-0 bg-destructive text-primary-foreground text-[10px] w-6 h-6 flex items-center justify-center rounded-bl"
                             title="Hapus foto"
                           >
-                            ×
+                            <X size={14} aria-hidden="true" />
                           </button>
                         </div>
                       ))}
                     </div>
 
                     {images.length < 5 && (
-                      <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-300 text-xs font-medium text-slate-700 hover:bg-slate-50">
-                        {uploadingMedia ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+                      <label className="cursor-pointer inline-flex min-w-0 flex-wrap items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-medium text-foreground hover:bg-background">
+                        {uploadingMedia ? <Loader2 size={12} className="animate-spin motion-reduce:animate-none" /> : <Camera size={12} />}
                         + Tambah Foto
                         <input
                           type="file"
                           accept="image/*"
-                          className="hidden"
+                          className="sr-only"
                           onChange={(e) => handleFileUpload(e, 'IMAGE')}
                           disabled={uploadingMedia}
                         />
@@ -631,33 +634,33 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                   </div>
 
                   {/* Video Upload */}
-                  <div className="border border-dashed border-slate-300 rounded-lg p-4 text-center bg-white">
-                    <Video className="mx-auto text-purple-600 mb-2" size={28} />
-                    <p className="text-xs font-medium text-slate-700">Video Kondisi Riil</p>
-                    <p className="text-[11px] text-slate-400 mb-3">Video singkat 5-30 detik (MP4, WebM)</p>
+                  <div className="border border-dashed border-border rounded-lg p-4 text-center bg-card">
+                    <Video className="mx-auto text-primary mb-2" size={28} />
+                    <p className="text-xs font-medium text-foreground">Video Kondisi Riil</p>
+                    <p className="text-[11px] text-muted-foreground mb-3">Video singkat 5-30 detik (MP4, WebM)</p>
 
                     {videoUrl ? (
-                      <div className="mb-3 p-2 bg-emerald-50 border border-emerald-200 rounded text-xs text-emerald-700 flex items-center justify-between">
-                        <span className="flex items-center gap-1 truncate max-w-[150px]">
-                          <CheckCircle2 size={14} className="text-emerald-600" />
+                      <div className="mb-3 p-2 bg-success/10 border border-success/30 rounded text-xs text-success flex min-w-0 flex-wrap items-center justify-between gap-3">
+                        <span className="flex min-w-0 items-center gap-1">
+                          <CheckCircle2 size={14} className="text-success" />
                           Video Terpasang
                         </span>
                         <button
                           type="button"
                           onClick={() => setVideoUrl(null)}
-                          className="text-rose-500 hover:underline text-[11px]"
+                          className="text-destructive hover:underline text-[11px]"
                         >
                           Hapus
                         </button>
                       </div>
                     ) : (
-                      <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-purple-200 bg-purple-50 text-xs font-medium text-purple-700 hover:bg-purple-100">
-                        {uploadingMedia ? <Loader2 size={12} className="animate-spin" /> : <Video size={12} />}
+                      <label className="cursor-pointer inline-flex min-w-0 flex-wrap items-center gap-1.5 px-3 py-1.5 rounded-md border border-primary/30 bg-primary/10 text-xs font-medium text-primary hover:bg-primary/10">
+                        {uploadingMedia ? <Loader2 size={12} className="animate-spin motion-reduce:animate-none" /> : <Video size={12} />}
                         + Unggah Video Bukti
                         <input
                           type="file"
                           accept="video/*"
-                          className="hidden"
+                          className="sr-only"
                           onChange={(e) => handleFileUpload(e, 'VIDEO')}
                           disabled={uploadingMedia}
                         />
@@ -669,13 +672,13 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
               {/* COD Zone & Location Selection */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
-                  <MapPin size={16} className="text-blue-600" />
+                <h4 className="text-sm font-semibold text-foreground flex min-w-0 flex-wrap items-center gap-1.5">
+                  <MapPin size={16} className="text-primary" />
                   Titik Temu COD Safe Zone Kampus
                 </h4>
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
+                <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="min-w-0 space-y-1">
                     <Label htmlFor="campusSelect">Pilih Kampus</Label>
                     <select
                       id="campusSelect"
@@ -686,7 +689,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                         const firstZone = codZones.find((z) => z.campusName === e.target.value)
                         if (firstZone) setValue('codZoneId', firstZone.id)
                       }}
-                      className="w-full h-10 px-3 rounded-md border border-input bg-white text-sm"
+                      className="w-full min-w-0 h-11 px-3 rounded-md border border-input bg-card text-sm"
                     >
                       {campuses.map((campus) => (
                         <option key={campus} value={campus}>
@@ -696,12 +699,12 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                     </select>
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="min-w-0 space-y-1">
                     <Label htmlFor="codZoneId">Pilih Titik Aman (COD Safe Zone)</Label>
                     <select
                       id="codZoneId"
                       {...register('codZoneId')}
-                      className="w-full h-10 px-3 rounded-md border border-input bg-white text-sm"
+                      className="w-full min-w-0 h-11 px-3 rounded-md border border-input bg-card text-sm"
                     >
                       {filteredCodZones.map((zone) => (
                         <option key={zone.id} value={zone.id}>
@@ -710,31 +713,31 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                       ))}
                     </select>
                     {errors.codZoneId && (
-                      <p className="text-xs text-red-500">{errors.codZoneId.message}</p>
+                      <p className="text-xs text-destructive">{errors.codZoneId.message}</p>
                     )}
                   </div>
                 </div>
               </div>
 
               {/* Submit Button */}
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => router.push(`/products/${id}`)}
-                  className="flex-1 h-11"
+                  className="min-w-0 flex-1 h-auto min-h-11 whitespace-normal py-3"
                   disabled={submitting}
                 >
                   Batal
                 </Button>
                 <Button
                   type="submit"
-                  className="flex-1 h-11 text-base bg-blue-600 hover:bg-blue-700"
+                  className="min-w-0 flex-1 h-auto min-h-11 whitespace-normal py-3 text-base bg-primary hover:bg-primary/90"
                   disabled={submitting}
                 >
                   {submitting ? (
                     <>
-                      <Loader2 size={18} className="animate-spin mr-2" />
+                      <Loader2 size={18} className="animate-spin motion-reduce:animate-none mr-2" />
                       Menyimpan Perubahan...
                     </>
                   ) : (

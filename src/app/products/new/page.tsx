@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createProductSchema, CreateProductInput } from '@/lib/validations/product'
 import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,6 +28,9 @@ import {
   Tag,
   CreditCard,
   Shield,
+  QrCode,
+  ClipboardList,
+  AlertTriangle,
   Copy,
   Check
 } from 'lucide-react'
@@ -327,28 +331,28 @@ export default function NewProductPage() {
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-blue-600" size={32} />
+        <Loader2 className="animate-spin motion-reduce:animate-none text-primary" size={32} />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4">
-      <div className="container max-w-2xl mx-auto">
+    <div className="min-h-screen bg-background px-4 py-5 sm:px-6 sm:py-8">
+      <div className="max-w-2xl mx-auto">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => router.back()}
-          className="mb-4 text-slate-600 hover:text-slate-900"
+          className="mb-4 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft size={16} className="mr-1" /> Kembali
         </Button>
 
-        <Card className="shadow-md border-slate-200">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl font-bold text-slate-800">
+        <Card className="shadow-sm border-border">
+          <CardHeader className="p-4 sm:p-6">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-xl sm:text-2xl font-bold text-foreground">
                   Buat Listing Produk Preloved
                 </CardTitle>
                 <CardDescription>
@@ -361,9 +365,9 @@ export default function NewProductPage() {
             </div>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6">
             {errorMessage && (
-              <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm flex items-center gap-2">
+              <div className="mb-6 p-3 bg-destructive/10 border border-destructive/30 text-destructive rounded-md text-sm flex items-center gap-2">
                 <AlertCircle size={18} className="shrink-0" />
                 <span>{errorMessage}</span>
               </div>
@@ -371,32 +375,33 @@ export default function NewProductPage() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {/* Media Upload Section (Foto & Video Wajib) */}
-              <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+              <div className="space-y-3 p-4 bg-background border border-border rounded-lg">
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                  <h4 className="text-sm font-semibold text-foreground flex min-w-0 flex-wrap items-center gap-1.5">
                     Bukti Kondisi Fisik Wajib
-                    <span className="text-xs font-normal text-rose-500">* (1 Foto + 1 Video)</span>
+                    <span className="text-xs font-normal text-destructive">* (1 Foto + 1 Video)</span>
                   </h4>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     Untuk menjamin transparansi, pembeli wajib melihat video kondisi riil barang sebelum COD.
                   </p>
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-4 pt-2">
+                <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                   {/* Foto Upload Nyata */}
-                  <div className="border border-dashed border-slate-300 rounded-lg p-4 text-center bg-white hover:border-blue-400 transition-colors">
+                  <div className="border border-dashed border-border rounded-lg p-4 text-center bg-card hover:border-primary/30 transition-colors">
                     <input
                       type="file"
                       ref={imageInputRef}
+                      aria-label="Pilih foto barang"
                       onChange={handleImageFileSelect}
                       accept="image/jpeg,image/png,image/webp"
                       className="hidden"
                       autoComplete="off"
                     />
 
-                    <Camera className="mx-auto text-blue-600 mb-2" size={28} />
-                    <p className="text-xs font-medium text-slate-700">Foto Barang ({images.length}/5)</p>
-                    <p className="text-[11px] text-slate-400 mb-3">Pilih foto dari galeri HP/Laptop</p>
+                    <Camera className="mx-auto text-primary mb-2" size={28} />
+                    <p className="text-xs font-medium text-foreground">Foto Barang ({images.length}/5)</p>
+                    <p className="text-[11px] text-muted-foreground mb-3">Pilih foto dari galeri HP/Laptop</p>
 
                     <div className="flex flex-wrap gap-2 justify-center mb-3">
                       {images.map((img, idx) => (
@@ -405,10 +410,11 @@ export default function NewProductPage() {
                           <img src={img} alt="preview" className="object-cover w-full h-full" />
                           <button
                             type="button"
+                            aria-label={`Hapus foto ${idx + 1}`}
                             onClick={() => setImages(images.filter((_, i) => i !== idx))}
-                            className="absolute top-0 right-0 bg-red-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-bl hover:bg-red-600"
+                            className="absolute top-0 right-0 bg-destructive text-primary-foreground text-[9px] w-6 h-6 flex items-center justify-center rounded-bl hover:bg-destructive"
                           >
-                            ×
+                            <X size={14} aria-hidden="true" />
                           </button>
                         </div>
                       ))}
@@ -424,7 +430,7 @@ export default function NewProductPage() {
                     >
                       {uploadingImage ? (
                         <>
-                          <Loader2 size={12} className="animate-spin mr-1" />
+                          <Loader2 size={12} className="animate-spin motion-reduce:animate-none mr-1" />
                           Mengunggah...
                         </>
                       ) : (
@@ -437,30 +443,31 @@ export default function NewProductPage() {
                   </div>
 
                   {/* Video Upload Nyata */}
-                  <div className="border border-dashed border-slate-300 rounded-lg p-4 text-center bg-white hover:border-purple-400 transition-colors">
+                  <div className="border border-dashed border-border rounded-lg p-4 text-center bg-card hover:border-primary/30 transition-colors">
                     <input
                       type="file"
                       ref={videoInputRef}
+                      aria-label="Pilih video bukti kondisi"
                       onChange={handleVideoFileSelect}
                       accept="video/mp4,video/webm,video/quicktime"
                       className="hidden"
                       autoComplete="off"
                     />
 
-                    <Video className="mx-auto text-purple-600 mb-2" size={28} />
-                    <p className="text-xs font-medium text-slate-700">Video Bukti Kondisi (Wajib 1)</p>
-                    <p className="text-[11px] text-slate-400 mb-3">Durasi 5-60 detik (Maks 50MB)</p>
+                    <Video className="mx-auto text-primary mb-2" size={28} />
+                    <p className="text-xs font-medium text-foreground">Video Bukti Kondisi (Wajib 1)</p>
+                    <p className="text-[11px] text-muted-foreground mb-3">Durasi 5-60 detik (Maks 50MB)</p>
 
                     {videoUrl ? (
-                      <div className="mb-3 p-2 bg-emerald-50 border border-emerald-200 rounded text-xs text-emerald-700 flex items-center justify-between">
-                        <span className="flex items-center gap-1 truncate max-w-[150px]">
-                          <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+                      <div className="mb-3 p-2 bg-success/10 border border-success/30 rounded text-xs text-success flex min-w-0 flex-wrap items-center justify-between gap-3">
+                        <span className="flex min-w-0 items-center gap-1">
+                          <CheckCircle2 size={14} className="text-success shrink-0" />
                           Video Terunggah
                         </span>
                         <button
                           type="button"
                           onClick={() => setVideoUrl(null)}
-                          className="text-rose-500 hover:underline text-[11px]"
+                          className="text-destructive hover:underline text-[11px]"
                         >
                           Hapus
                         </button>
@@ -472,11 +479,11 @@ export default function NewProductPage() {
                         size="sm"
                         onClick={() => videoInputRef.current?.click()}
                         disabled={uploadingVideo}
-                        className="text-xs text-purple-700 border-purple-200 hover:bg-purple-50"
+                        className="text-xs text-primary border-primary/30 hover:bg-primary/10"
                       >
                         {uploadingVideo ? (
                           <>
-                            <Loader2 size={12} className="animate-spin mr-1" />
+                            <Loader2 size={12} className="animate-spin motion-reduce:animate-none mr-1" />
                             Mengunggah Video...
                           </>
                         ) : (
@@ -493,7 +500,7 @@ export default function NewProductPage() {
 
               {/* Detail Produk Section */}
               <div className="space-y-4">
-                <div className="space-y-1">
+                <div className="min-w-0 space-y-1">
                   <Label htmlFor="title">Judul Barang</Label>
                   <Input
                     id="title"
@@ -501,17 +508,17 @@ export default function NewProductPage() {
                     {...register('title')}
                   />
                   {errors.title && (
-                    <p className="text-xs text-red-500">{errors.title.message}</p>
+                    <p className="text-xs text-destructive">{errors.title.message}</p>
                   )}
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
+                <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="min-w-0 space-y-1">
                     <Label htmlFor="category">Kategori</Label>
                     <select
                       id="category"
                       {...register('category')}
-                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                      className="w-full min-w-0 h-11 px-3 rounded-md border border-input bg-background text-sm"
                     >
                       <option value={ProductCategory.BUKU_KULIAH}>Buku Kuliah</option>
                       <option value={ProductCategory.ALAT_KOS_RUMAH_TANGGA}>Alat Kos & RT</option>
@@ -520,14 +527,14 @@ export default function NewProductPage() {
                       <option value={ProductCategory.LAIN_LAIN}>Lain-lain</option>
                     </select>
                     {errors.category && (
-                      <p className="text-xs text-red-500">{errors.category.message}</p>
+                      <p className="text-xs text-destructive">{errors.category.message}</p>
                     )}
                   </div>
 
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center">
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap justify-between items-center gap-2">
                       <Label htmlFor="condition">Kondisi Barang</Label>
-                      <span className="text-xs font-semibold text-blue-600">
+                      <span className="text-xs font-semibold text-primary">
                         {watchCondition || 85}%
                       </span>
                     </div>
@@ -538,9 +545,9 @@ export default function NewProductPage() {
                       max="100"
                       step="5"
                       {...register('conditionPercentage', { valueAsNumber: true })}
-                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 mt-2"
+                      className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary mt-2"
                     />
-                    <div className="flex justify-between text-[10px] text-slate-400">
+                    <div className="flex flex-wrap justify-between gap-2 text-[10px] text-muted-foreground">
                       <span>Layak Pakai (50%)</span>
                       <span>Sangat Baik (85%)</span>
                       <span>Seperti Baru (99%)</span>
@@ -548,37 +555,37 @@ export default function NewProductPage() {
                   </div>
                 </div>
 
-                <div className="space-y-1">
+                <div className="min-w-0 space-y-1">
                   <Label htmlFor="description">Deskripsi Kondisi & Kelengkapan</Label>
                   <textarea
                     id="description"
                     rows={4}
                     placeholder="Jelaskan kondisi riil, cacat jika ada, alasan jual, dan kelengkapan aksesoris..."
                     {...register('description')}
-                    className="w-full p-3 rounded-md border border-input bg-background text-sm"
+                    className="w-full min-w-0 p-3 rounded-md border border-input bg-background text-sm"
                   />
                   {errors.description && (
-                    <p className="text-xs text-red-500">{errors.description.message}</p>
+                    <p className="text-xs text-destructive">{errors.description.message}</p>
                   )}
                 </div>
               </div>
 
               {/* Harga Jual Produk Section */}
-              <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="basePrice" className="text-slate-800 font-semibold">
-                      Harga Jual Produk (Rp) <span className="text-rose-500">*</span>
+              <div className="space-y-3 p-4 bg-background border border-border rounded-lg">
+                <div className="min-w-0 space-y-1">
+                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+                    <Label htmlFor="basePrice" className="text-foreground font-semibold">
+                      Harga Jual Produk (Rp) <span className="text-destructive">*</span>
                     </Label>
-                    <span className="text-[11px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full">
+                    <span className="text-[11px] bg-success/10 text-success font-semibold px-2 py-0.5 rounded-full">
                       Harga Bersih Asli
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted-foreground">
                     Harga ini yang akan langsung dibayar pembeli saat transaksi COD tanpa markup terselubung.
                   </p>
                   <div className="relative mt-2">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">
                       Rp
                     </span>
                     <Input
@@ -588,20 +595,20 @@ export default function NewProductPage() {
                       min="100"
                       placeholder="cth. 75000 / 12500"
                       {...register('basePrice', { valueAsNumber: true })}
-                      className="pl-10 bg-white font-semibold text-slate-900"
+                      className="pl-10 bg-card font-semibold text-foreground"
                     />
                   </div>
                   {errors.basePrice && (
-                    <p className="text-xs text-red-500">{errors.basePrice.message}</p>
+                    <p className="text-xs text-destructive">{errors.basePrice.message}</p>
                   )}
                 </div>
 
                 {/* Listing Fee Notification Card */}
-                <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-lg text-xs text-emerald-900 flex items-start gap-2.5">
-                  <Tag size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                <div className="p-3 bg-success/10 border border-success/30 rounded-lg text-xs text-success flex items-start gap-2.5">
+                  <Tag size={16} className="text-success shrink-0 mt-0.5" />
                   <div>
                     <span className="font-bold">Biaya Pasang Iklan (Listing Fee): {formatRupiah(listingFee)}</span>
-                    <p className="text-[11px] text-emerald-700 mt-0.5">
+                    <p className="text-[11px] text-success mt-0.5">
                       {listingFee > 0
                         ? `Dibayar 1 kali di muka saat mempublikasikan produk ini. Setelah tayang, seluruh uang hasil penjualan Rp ${watchBasePrice ? Number(watchBasePrice).toLocaleString('id-ID') : '0'} 100% menjadi milik Anda!`
                         : 'Saat ini berlaku promo GRATIS pasang listing produk (Rp 0).'}
@@ -611,11 +618,11 @@ export default function NewProductPage() {
               </div>
 
               {/* Barter Option Section */}
-              <div className="space-y-3 p-4 bg-purple-50/60 border border-purple-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <RefreshCw className="text-purple-600" size={18} />
-                    <Label htmlFor="isBarter" className="text-sm font-semibold text-purple-950 cursor-pointer">
+              <div className="space-y-3 p-4 bg-primary/10 border border-primary/30 rounded-lg">
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <RefreshCw className="text-primary" size={18} />
+                    <Label htmlFor="isBarter" className="text-sm font-semibold text-primary cursor-pointer">
                       Terima Tukar Tambah / Barter
                     </Label>
                   </div>
@@ -624,13 +631,13 @@ export default function NewProductPage() {
                     id="isBarter"
                     {...register('isBarter')}
                     disabled={!isVerifiedStudent}
-                    className="h-4 w-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500 disabled:opacity-50"
+                    className="h-5 w-5 shrink-0 rounded border-border text-primary accent-primary focus:ring-ring disabled:opacity-50"
                   />
                 </div>
 
                 {!isVerifiedStudent ? (
-                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-800 flex items-start gap-2">
-                    <GraduationCap size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                  <div className="p-2.5 bg-warning/10 border border-warning/30 rounded-md text-xs text-warning flex items-start gap-2">
+                    <GraduationCap size={16} className="text-warning shrink-0 mt-0.5" />
                     <span>
                       Fitur Barter khusus untuk <strong>Verified Student</strong> (.ac.id). Silakan verifikasi email kampus Anda untuk membuka fitur ini.
                     </span>
@@ -638,14 +645,14 @@ export default function NewProductPage() {
                 ) : (
                   watchIsBarter && (
                     <div className="space-y-1 pt-1">
-                      <Label htmlFor="barterTarget" className="text-xs text-purple-900">
+                      <Label htmlFor="barterTarget" className="text-xs text-primary">
                         Barang yang Anda Harapkan untuk Ditukar (Opsional)
                       </Label>
                       <Input
                         id="barterTarget"
                         placeholder="cth. Mau barter dengan helm bogo / novel Tere Liye"
                         {...register('barterTarget')}
-                        className="bg-white text-xs"
+                        className="bg-card text-xs"
                       />
                     </div>
                   )
@@ -654,13 +661,13 @@ export default function NewProductPage() {
 
               {/* COD Zone & Location Selection */}
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
-                  <MapPin size={16} className="text-blue-600" />
+                <h4 className="text-sm font-semibold text-foreground flex min-w-0 flex-wrap items-center gap-1.5">
+                  <MapPin size={16} className="text-primary" />
                   Titik Temu COD Safe Zone Kampus
                 </h4>
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
+                <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="min-w-0 space-y-1">
                     <Label htmlFor="campusSelect">Pilih Kampus</Label>
                     <select
                       id="campusSelect"
@@ -674,7 +681,7 @@ export default function NewProductPage() {
                           setValue('codZoneId', matchingZone.id)
                         }
                       }}
-                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                      className="w-full min-w-0 h-11 px-3 rounded-md border border-input bg-background text-sm"
                     >
                       {displayCampuses.map((campus) => (
                         <option key={campus} value={campus}>
@@ -684,12 +691,12 @@ export default function NewProductPage() {
                     </select>
                   </div>
 
-                    <div className="space-y-1">
+                    <div className="min-w-0 space-y-1">
                       <Label htmlFor="codZoneId">Pilih Titik Aman (COD Safe Zone)</Label>
                       <select
                         id="codZoneId"
                         {...register('codZoneId')}
-                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                        className="w-full min-w-0 h-11 px-3 rounded-md border border-input bg-background text-sm"
                       >
                         {(filteredCodZones.length > 0 ? filteredCodZones : UNNES_DEFAULT_ZONES).map((zone) => (
                           <option key={zone.id} value={zone.id}>
@@ -698,7 +705,7 @@ export default function NewProductPage() {
                         ))}
                       </select>
                       {errors.codZoneId && (
-                        <p className="text-xs text-red-500">{errors.codZoneId.message}</p>
+                        <p className="text-xs text-destructive">{errors.codZoneId.message}</p>
                       )}
                     </div>
                 </div>
@@ -707,12 +714,12 @@ export default function NewProductPage() {
               {/* Submit Button */}
               <Button
                 type="submit"
-                className="w-full h-12 text-base font-semibold mt-4 bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20"
+                className="w-full h-auto min-h-12 whitespace-normal px-4 py-3 text-sm sm:text-base font-semibold mt-4 bg-primary hover:bg-primary/90 shadow-sm"
                 disabled={loading}
               >
                 {loading ? (
                   <>
-                    <Loader2 size={18} className="animate-spin mr-2" />
+                    <Loader2 size={18} className="animate-spin motion-reduce:animate-none mr-2" />
                     Menyiapkan Listing...
                   </>
                 ) : listingFee > 0 ? (
@@ -731,25 +738,26 @@ export default function NewProductPage() {
 
       {/* Modal Pembayaran Biaya Listing (Pay-per-Listing) */}
       {isPaymentModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-150">
+        <Modal open={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} title="Pembayaran Biaya Listing" closeDisabled={processingPayment}>
+          <div className="bg-card text-foreground rounded-2xl max-w-md min-w-0 w-full p-4 sm:p-6 space-y-4 shadow-2xl max-h-[calc(100dvh-2*max(1rem,env(safe-area-inset-top),env(safe-area-inset-bottom)))] overflow-y-auto overscroll-contain">
             {/* Header Modal */}
-            <div className="flex items-center justify-between border-b pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+            <div className="flex min-w-0 items-start justify-between gap-3 border-b border-border pb-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-success/10 text-success flex items-center justify-center">
                   <Shield size={18} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base text-slate-900 leading-tight">
+                  <h3 id="listing-payment-title" className="font-bold text-base text-foreground leading-tight">
                     Pembayaran Biaya Listing
                   </h3>
-                  <p className="text-[11px] text-slate-500">Pasang Iklan Produk Preloved</p>
+                  <p className="text-[11px] text-muted-foreground">Pasang Iklan Produk Preloved</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsPaymentModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                aria-label="Tutup pembayaran"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
                 disabled={processingPayment}
               >
                 <X size={20} />
@@ -757,7 +765,7 @@ export default function NewProductPage() {
             </div>
 
             {/* Product Mini Preview */}
-            <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+            <div className="flex items-center gap-3 p-3 bg-background border border-border rounded-xl">
               {images.length > 0 ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -766,59 +774,60 @@ export default function NewProductPage() {
                   className="w-14 h-14 rounded-lg object-cover border shrink-0"
                 />
               ) : (
-                <div className="w-14 h-14 bg-slate-200 rounded-lg shrink-0 flex items-center justify-center">
-                  <Camera size={20} className="text-slate-400" />
+                <div className="w-14 h-14 bg-muted rounded-lg shrink-0 flex items-center justify-center">
+                  <Camera size={20} className="text-muted-foreground" />
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-slate-900 truncate">
+                <p className="text-xs font-semibold text-foreground truncate">
                   {watch('title') || 'Judul Barang'}
                 </p>
-                <p className="text-[11px] text-slate-500">
-                  Harga Jual: <span className="font-semibold text-blue-600">{formatRupiah(watch('basePrice') || 0)}</span>
+                <p className="text-[11px] text-muted-foreground">
+                  Harga Jual: <span className="font-semibold text-primary">{formatRupiah(watch('basePrice') || 0)}</span>
                 </p>
-                <span className="inline-block mt-0.5 text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded font-medium">
+                <span className="inline-block mt-0.5 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
                   {selectedCampus}
                 </span>
               </div>
             </div>
 
             {/* Nominal Box */}
-            <div className="p-4 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl text-white shadow-md shadow-emerald-500/20">
-              <span className="text-xs uppercase tracking-wider text-emerald-100 font-medium">
+            <div className="p-4 bg-primary rounded-xl text-primary-foreground shadow-md shadow-primary/10">
+              <span className="text-xs text-primary-foreground/80 font-medium">
                 Total Tagihan Pasang Iklan
               </span>
               <div className="text-3xl font-extrabold mt-0.5">
                 {formatRupiah(listingFee)}
               </div>
-              <p className="text-[11px] text-emerald-100 mt-1">
-                ✓ Sekali bayar • 100% hasil penjualan saat COD milik Anda
+              <p className="flex items-start gap-1.5 text-xs text-primary-foreground/80 mt-1">
+                <CheckCircle2 size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+                Sekali bayar, 100% hasil penjualan saat COD milik Anda
               </p>
             </div>
 
             {/* Metode Pembayaran Tabs */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-slate-700">Pilih Metode Pembayaran</Label>
+            <div className="min-w-0 space-y-2">
+              <Label className="text-xs font-semibold text-foreground">Pilih Metode Pembayaran</Label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('QRIS')}
-                  className={`p-2.5 rounded-lg border text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+                  className={`p-2.5 rounded-lg border text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
                     paymentMethod === 'QRIS'
-                      ? 'border-emerald-500 bg-emerald-50/80 text-emerald-800 font-bold shadow-sm'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      ? 'border-success/30 bg-success/10 text-success font-bold shadow-sm'
+                      : 'border-border text-muted-foreground hover:bg-background'
                   }`}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3z"/><path d="M17 17h4v4h-4z"/><path d="M17 14h.01"/><path d="M14 17h.01"/></svg>
+                  <QrCode size={16} className="shrink-0" aria-hidden="true" />
                   QRIS (Semua E-Wallet)
                 </button>
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('TRANSFER')}
-                  className={`p-2.5 rounded-lg border text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+                  className={`p-2.5 rounded-lg border text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
                     paymentMethod === 'TRANSFER'
-                      ? 'border-emerald-500 bg-emerald-50/80 text-emerald-800 font-bold shadow-sm'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      ? 'border-success/30 bg-success/10 text-success font-bold shadow-sm'
+                      : 'border-border text-muted-foreground hover:bg-background'
                   }`}
                 >
                   <CreditCard size={16} />
@@ -829,9 +838,9 @@ export default function NewProductPage() {
 
             {/* Tampilan QRIS */}
             {paymentMethod === 'QRIS' && (
-              <div className="p-4 border border-dashed border-slate-300 rounded-xl text-center bg-white space-y-2.5">
-                <div className="inline-block bg-slate-900 text-white text-[10px] font-bold px-3 py-0.5 rounded tracking-widest">
-                  QRIS STANDAR NASIONAL
+              <div className="py-4 text-center space-y-2.5">
+                <div className="inline-block bg-primary text-primary-foreground text-xs font-medium px-3 py-0.5 rounded">
+                  QRIS standar nasional
                 </div>
 
                 {/* Real QRIS Image */}
@@ -840,15 +849,15 @@ export default function NewProductPage() {
                   <img
                     src="/qris-kampusthrift.jpg"
                     alt="QRIS KampusThrift"
-                    className="w-full rounded-lg border border-slate-200 shadow-sm"
+                    className="w-full rounded-lg border border-border shadow-sm"
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-slate-800">
+                <div className="min-w-0 space-y-1">
+                  <p className="text-xs font-semibold text-foreground">
                     AKSA RAHASTA, AKSESORIS F • NMID: ID1025440120539
                   </p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-muted-foreground">
                     Scan dari GoPay, Dana, OVO, ShopeePay, BCA Mobile, Livin, BRImo, dll.
                   </p>
                 </div>
@@ -857,13 +866,13 @@ export default function NewProductPage() {
 
             {/* Tampilan GoPay / Dana */}
             {paymentMethod === 'TRANSFER' && (
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 {/* GoPay */}
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
+                <div className="p-3 bg-background border border-border rounded-lg flex min-w-0 flex-wrap items-center justify-between gap-3">
                   <div>
-                    <span className="text-[11px] font-bold text-green-700">GoPay</span>
-                    <p className="text-sm font-mono font-bold text-slate-900">0895335301060</p>
-                    <p className="text-[10px] text-slate-400">a.n. Laksmana Surya</p>
+                    <span className="text-[11px] font-bold text-success">GoPay</span>
+                    <p className="text-sm font-mono font-bold text-foreground">0895335301060</p>
+                    <p className="text-[10px] text-muted-foreground">a.n. Laksmana Surya</p>
                   </div>
                   <Button
                     type="button"
@@ -872,17 +881,17 @@ export default function NewProductPage() {
                     onClick={() => handleCopy('0895335301060', 'GoPay')}
                     className="text-xs h-8 gap-1"
                   >
-                    {copiedBank === 'GoPay' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                    {copiedBank === 'GoPay' ? <Check size={12} className="text-success" /> : <Copy size={12} />}
                     {copiedBank === 'GoPay' ? 'Tersalin' : 'Salin'}
                   </Button>
                 </div>
 
                 {/* Dana */}
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
+                <div className="p-3 bg-background border border-border rounded-lg flex min-w-0 flex-wrap items-center justify-between gap-3">
                   <div>
-                    <span className="text-[11px] font-bold text-blue-700">Dana</span>
-                    <p className="text-sm font-mono font-bold text-slate-900">0895335301060</p>
-                    <p className="text-[10px] text-slate-400">a.n. Laksmana Surya Prahasta</p>
+                    <span className="text-[11px] font-bold text-primary">Dana</span>
+                    <p className="text-sm font-mono font-bold text-foreground">0895335301060</p>
+                    <p className="text-[10px] text-muted-foreground">a.n. Laksmana Surya Prahasta</p>
                   </div>
                   <Button
                     type="button"
@@ -891,7 +900,7 @@ export default function NewProductPage() {
                     onClick={() => handleCopy('0895335301060', 'Dana')}
                     className="text-xs h-8 gap-1"
                   >
-                    {copiedBank === 'Dana' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                    {copiedBank === 'Dana' ? <Check size={12} className="text-success" /> : <Copy size={12} />}
                     {copiedBank === 'Dana' ? 'Tersalin' : 'Salin'}
                   </Button>
                 </div>
@@ -900,13 +909,14 @@ export default function NewProductPage() {
 
             {/* Upload Bukti Pembayaran */}
             <div className="space-y-2 pt-1">
-              <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+              <Label className="text-xs font-semibold text-foreground flex min-w-0 flex-wrap items-center gap-1.5">
                 <Camera size={13} />
                 Upload Bukti Transfer / Screenshot Pembayaran
-                <span className="text-red-500">*</span>
+                <span className="text-destructive">*</span>
               </Label>
               <input
                 ref={proofInputRef}
+                aria-label="Upload bukti pembayaran"
                 type="file"
                 accept="image/*"
                 className="hidden"
@@ -918,12 +928,13 @@ export default function NewProductPage() {
                   <img
                     src={proofPreview}
                     alt="Bukti Bayar"
-                    className="w-full max-h-48 object-contain rounded-lg border border-slate-200 bg-slate-50"
+                    className="w-full max-h-48 object-contain rounded-lg border border-border bg-background"
                   />
                   <button
                     type="button"
+                    aria-label="Hapus bukti pembayaran"
                     onClick={() => { setProofFile(null); setProofPreview(null) }}
-                    className="absolute top-1.5 right-1.5 bg-red-500 text-white rounded-full p-0.5"
+                    className="absolute top-1.5 right-1.5 bg-destructive text-primary-foreground rounded-full p-0.5"
                   >
                     <X size={12} />
                   </button>
@@ -932,16 +943,17 @@ export default function NewProductPage() {
                 <button
                   type="button"
                   onClick={() => proofInputRef.current?.click()}
-                  className="w-full border-2 border-dashed border-slate-300 rounded-lg p-4 text-center text-xs text-slate-500 hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                  className="w-full border-2 border-dashed border-border rounded-lg p-4 text-center text-xs text-muted-foreground hover:border-success/30 hover:text-success hover:bg-success/10 transition-colors"
                 >
                   <UploadCloud size={20} className="mx-auto mb-1 opacity-50" />
-                  Klik untuk upload screenshot bukti pembayaran
+                  Unggah bukti bayar
                   <br />
-                  <span className="text-[10px] text-slate-400">(JPG, PNG — maks 10MB)</span>
+                  <span className="text-[10px] text-muted-foreground">(JPG, PNG — maks 10MB)</span>
                 </button>
               )}
-              <p className="text-[10px] text-slate-400 leading-relaxed">
-                📋 Produk akan direview admin setelah bukti bayar diterima. Produk aktif setelah disetujui.
+              <p className="flex items-start gap-1.5 text-xs text-muted-foreground leading-relaxed">
+                <ClipboardList size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+                Produk akan direview admin setelah bukti bayar diterima. Produk aktif setelah disetujui.
               </p>
             </div>
 
@@ -951,11 +963,11 @@ export default function NewProductPage() {
                 type="button"
                 onClick={() => executePublish(pendingPayload)}
                 disabled={processingPayment || !proofFile}
-                className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-auto min-h-11 whitespace-normal py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm shadow-md shadow-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {processingPayment ? (
                   <>
-                    <Loader2 size={16} className="animate-spin mr-2" />
+                    <Loader2 size={16} className="animate-spin motion-reduce:animate-none mr-2" />
                     {uploadingProof ? 'Mengupload bukti...' : 'Mengirim listing...'}
                   </>
                 ) : (
@@ -966,8 +978,9 @@ export default function NewProductPage() {
                 )}
               </Button>
               {!proofFile && (
-                <p className="text-[10px] text-center text-amber-600 font-medium">
-                  ⚠️ Upload bukti pembayaran terlebih dahulu
+                <p className="flex items-center justify-center gap-1.5 text-xs text-center text-warning font-medium">
+                  <AlertTriangle size={14} className="shrink-0" aria-hidden="true" />
+                  Upload bukti pembayaran terlebih dahulu
                 </p>
               )}
 
@@ -976,13 +989,13 @@ export default function NewProductPage() {
                 variant="ghost"
                 onClick={() => setIsPaymentModalOpen(false)}
                 disabled={processingPayment}
-                className="w-full text-xs text-slate-500 hover:text-slate-800 h-8"
+                className="w-full text-xs text-muted-foreground hover:text-foreground h-8"
               >
                 Batal / Edit Data Produk
               </Button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   )

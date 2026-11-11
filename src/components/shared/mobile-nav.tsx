@@ -64,27 +64,22 @@ export function MobileNav() {
   ]
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 px-2 py-1.5 shadow-lg">
-      <div className="flex items-center justify-around">
+    <nav className="mobile-navigation" aria-label="Navigasi seluler">
+      <div className="mx-auto flex max-w-lg items-center justify-around gap-1">
         {navItems.map((item) => {
           const Icon = item.icon
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors ${
-                item.highlight
-                  ? 'text-blue-600 font-semibold'
-                  : item.active
-                  ? 'text-blue-600 font-medium'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
+              aria-current={item.active ? 'page' : undefined}
+              data-highlight={item.highlight || undefined}
             >
               <Icon
                 size={item.highlight ? 24 : 20}
-                className={item.highlight ? 'text-blue-600' : ''}
+                aria-hidden="true"
               />
-              <span className="text-[10px] mt-0.5">{item.label}</span>
+              <span>{item.label}</span>
             </Link>
           )
         })}

@@ -147,35 +147,35 @@ export default function AdminProductsPage() {
   const getStatusBadge = (st: string) => {
     switch (st) {
       case 'PENDING_PAYMENT':
-        return <Badge className="text-[10px] bg-amber-100 text-amber-800 border-amber-200">⏳ Menunggu Validasi</Badge>
+        return <Badge className="text-xs bg-warning/10 text-warning border-border">Menunggu Validasi</Badge>
       case 'ACTIVE':
-        return <Badge className="text-[10px] bg-emerald-100 text-emerald-800 border-emerald-200">✅ Aktif</Badge>
+        return <Badge className="text-xs bg-success/10 text-success border-border">Aktif</Badge>
       case 'SOLD':
-        return <Badge variant="secondary" className="text-[10px]">Terjual</Badge>
+        return <Badge variant="secondary" className="text-xs">Terjual</Badge>
       case 'BANNED':
-        return <Badge variant="destructive" className="text-[10px]">Banned</Badge>
+        return <Badge variant="destructive" className="text-xs">Banned</Badge>
       case 'REJECTED':
-        return <Badge className="text-[10px] bg-red-100 text-red-800 border-red-200">❌ Ditolak</Badge>
+        return <Badge className="text-xs bg-destructive/10 text-destructive border-border">Ditolak</Badge>
       default:
-        return <Badge className="text-[10px]">{st}</Badge>
+        return <Badge className="text-xs">{st}</Badge>
     }
   }
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-blue-600" size={32} />
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <Loader2 className="animate-spin text-primary" size={32} />
       </div>
     )
   }
 
   if (!session?.user || session.user.role !== Role.ADMIN) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full p-6 text-center">
-          <AlertCircle className="mx-auto text-red-500 mb-2" size={40} />
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+        <Card className="min-w-0 max-w-md w-full p-6 text-center">
+          <AlertCircle className="mx-auto text-destructive mb-2" size={40} />
           <h2 className="text-xl font-bold">Akses Ditolak</h2>
-          <Button onClick={() => router.push('/')} className="mt-4 w-full">
+          <Button onClick={() => router.push('/')} className="min-h-11 mt-4 w-full">
             Kembali
           </Button>
         </Card>
@@ -186,19 +186,20 @@ export default function AdminProductsPage() {
   const pendingCount = products.filter((p) => p.status === 'PENDING_PAYMENT').length
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4">
+    <div className="min-h-screen bg-background text-foreground py-6 sm:py-10">
       {/* Proof Preview Modal */}
       {previewProof && (
         <div
-          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-foreground/60 z-50 flex items-center justify-center p-4"
           onClick={() => setPreviewProof(null)}
         >
-          <div className="relative max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="relative max-w-lg w-full max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl bg-card p-4" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setPreviewProof(null)}
-              className="absolute -top-3 -right-3 bg-white rounded-full p-1 shadow-lg z-10"
+              aria-label="Tutup bukti pembayaran"
+              className="sticky top-0 ml-auto mb-2 flex h-11 w-11 items-center justify-center bg-background rounded-md hover:bg-muted z-10"
             >
-              <X size={18} className="text-slate-700" />
+              <X size={18} className="text-foreground" />
             </button>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -206,7 +207,7 @@ export default function AdminProductsPage() {
               alt="Bukti Pembayaran"
               className="w-full rounded-xl shadow-2xl"
             />
-            <p className="text-center text-white text-xs mt-3 opacity-70">Klik di luar untuk menutup</p>
+            <p className="text-center text-muted-foreground text-sm mt-3">Klik di luar untuk menutup</p>
           </div>
         </div>
       )}
@@ -214,48 +215,49 @@ export default function AdminProductsPage() {
       {/* Rejection Reason Modal */}
       {rejectingProduct && (
         <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-foreground/60 z-50 flex items-center justify-center p-4"
           onClick={() => setRejectingProduct(null)}
         >
           <div
-            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4"
+            className="bg-card rounded-xl max-w-md w-full max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:p-6 shadow-2xl space-y-4 break-words"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b pb-3">
-              <div className="flex items-center gap-2 text-red-600 font-bold text-base">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
+              <div className="flex items-center gap-2 text-destructive font-bold text-base">
                 <XCircle size={20} />
                 Tolak Bukti Pembayaran
               </div>
               <button
                 onClick={() => setRejectingProduct(null)}
-                className="text-slate-400 hover:text-slate-700"
+                aria-label="Tutup alasan penolakan"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <X size={18} />
               </button>
             </div>
 
             <div>
-              <p className="text-xs text-slate-500">Produk yang ditolak:</p>
-              <p className="font-semibold text-sm text-slate-800 line-clamp-1">
+              <p className="text-xs text-muted-foreground">Produk yang ditolak:</p>
+              <p className="font-semibold text-sm text-foreground line-clamp-1">
                 {rejectingProduct.title}
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 Penjual: {rejectingProduct.seller?.name} ({rejectingProduct.seller?.email})
               </p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-700">
+              <label className="text-xs font-semibold text-foreground">
                 Pilih Alasan Penolakan:
               </label>
-              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              <div className="space-y-2">
                 {PRESET_REASONS.map((reason) => (
                   <label
                     key={reason}
-                    className={`flex items-start gap-2 p-2.5 rounded-lg border text-xs cursor-pointer transition-all ${
+                    className={`flex items-start gap-2 min-h-11 p-3 rounded-md border text-sm cursor-pointer transition-colors ${
                       selectedPresetReason === reason
-                        ? 'border-red-500 bg-red-50/70 text-red-900 font-medium'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                        ? 'border-border bg-destructive/10 text-destructive font-medium'
+                        : 'border-border hover:bg-muted text-foreground'
                     }`}
                   >
                     <input
@@ -264,7 +266,7 @@ export default function AdminProductsPage() {
                       value={reason}
                       checked={selectedPresetReason === reason}
                       onChange={(e) => setSelectedPresetReason(e.target.value)}
-                      className="mt-0.5 text-red-600"
+                      className="mt-0.5 text-destructive"
                     />
                     <span>{reason}</span>
                   </label>
@@ -273,26 +275,26 @@ export default function AdminProductsPage() {
             </div>
 
             {selectedPresetReason === 'Lainnya' && (
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700">
+              <div className="min-w-0 space-y-2">
+                <label className="text-xs font-semibold text-foreground">
                   Tuliskan Alasan Khusus:
                 </label>
                 <Input
                   placeholder="Contoh: Bukti buram, mohon upload ulang..."
                   value={customReason}
                   onChange={(e) => setCustomReason(e.target.value)}
-                  className="text-xs"
+                  className="min-h-11 text-base sm:text-sm text-xs"
                 />
               </div>
             )}
 
-            <div className="flex gap-2 pt-2 border-t">
+            <div className="flex flex-wrap gap-2 pt-2 border-t">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setRejectingProduct(null)}
                 disabled={actionLoading === rejectingProduct.id}
-                className="w-1/2 text-xs"
+                className="min-h-11 min-w-0 flex-1 text-sm"
               >
                 Batal
               </Button>
@@ -301,7 +303,7 @@ export default function AdminProductsPage() {
                 size="sm"
                 onClick={handleConfirmReject}
                 disabled={actionLoading === rejectingProduct.id}
-                className="w-1/2 text-xs gap-1.5 bg-red-600 hover:bg-red-700"
+                className="min-h-11 min-w-0 flex-1 whitespace-normal text-sm gap-2"
               >
                 {actionLoading === rejectingProduct.id ? (
                   <Loader2 size={13} className="animate-spin" />
@@ -315,34 +317,34 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      <div className="max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="container min-w-0 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push('/admin')}
-            className="gap-2 text-slate-600"
+            className="min-h-11 h-auto justify-start whitespace-normal gap-2 text-muted-foreground"
           >
             <ArrowLeft size={16} />
             Kembali ke Dashboard Admin
           </Button>
         </div>
 
-        <Card className="shadow-md border-slate-200">
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <Card className="min-w-0 shadow-sm border-border">
+          <CardHeader className="min-w-0 p-4 sm:p-6">
+            <div className="min-w-0 space-y-4">
               <div>
-                <CardTitle className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                  <ShieldAlert className="text-blue-600" size={24} />
+                <CardTitle className="min-w-0 leading-snug [&_svg]:shrink-0 text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
+                  <ShieldAlert className="text-primary" size={24} />
                   Moderasi Produk
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="break-words">
                   Validasi bukti bayar listing fee &amp; kelola postingan produk
                 </CardDescription>
               </div>
 
               {/* Status Filters */}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex min-w-0 gap-2 overflow-x-auto pb-1">
                 {[
                   { key: 'PENDING_PAYMENT', label: 'Menunggu Validasi' },
                   { key: 'ALL', label: 'Semua' },
@@ -355,12 +357,13 @@ export default function AdminProductsPage() {
                     variant={statusFilter === key ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setStatusFilter(key)}
-                    className={`text-xs h-8 ${key === 'PENDING_PAYMENT' && statusFilter !== key ? 'border-amber-400 text-amber-700' : ''}`}
+                    aria-pressed={statusFilter === key}
+                    className={`min-h-11 shrink-0 text-sm h-11 ${key === 'PENDING_PAYMENT' && statusFilter !== key ? 'border-border text-warning' : ''}`}
                   >
                     {key === 'PENDING_PAYMENT' && <Clock size={12} className="mr-1" />}
                     {label}
                     {key === 'PENDING_PAYMENT' && pendingCount > 0 && statusFilter === 'PENDING_PAYMENT' && (
-                      <span className="ml-1 bg-amber-500 text-white text-[9px] rounded-full px-1.5 py-px">
+                      <span className="ml-1 bg-warning/10 text-warning text-xs rounded-full px-1.5 py-px">
                         {pendingCount}
                       </span>
                     )}
@@ -375,37 +378,37 @@ export default function AdminProductsPage() {
                 e.preventDefault()
                 fetchProducts()
               }}
-              className="flex gap-2 mt-4"
+              className="flex min-w-0 gap-2 mt-4"
             >
               <Input
                 placeholder="Cari produk atau penjual..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="text-sm"
+                className="min-h-11 text-base sm:text-sm text-sm"
               />
-              <Button type="submit" variant="outline" size="sm" className="gap-1 shrink-0">
+              <Button type="submit" variant="outline" size="sm" className="min-h-11 gap-1 shrink-0">
                 <Search size={14} />
                 Cari
               </Button>
             </form>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="min-w-0 p-4 pt-0 sm:p-6 sm:pt-0">
             {products.length === 0 ? (
-              <div className="text-center py-16 text-slate-400">
+              <div className="text-center py-16 text-muted-foreground">
                 <Receipt size={40} className="mx-auto mb-3 opacity-30" />
                 <p className="font-medium">
                   {statusFilter === 'PENDING_PAYMENT'
                     ? 'Tidak ada produk yang menunggu validasi'
                     : 'Tidak ada produk ditemukan'}
                 </p>
-                <p className="text-sm mt-1">Semua sudah beres! 🎉</p>
+                <p className="text-sm mt-1">Semua sudah beres!</p>
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-slate-200">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-50 border-b border-slate-200">
-                    <tr className="text-left text-xs text-slate-500 font-semibold">
+              <div className="max-w-full min-w-0 overflow-x-auto">
+                <table className="block w-full text-left text-sm md:table md:min-w-[960px]">
+                  <thead className="hidden md:table-header-group bg-muted border-b border-border">
+                    <tr className="text-left text-xs text-muted-foreground font-semibold">
                       <th className="p-3">Produk</th>
                       <th className="p-3">Penjual</th>
                       <th className="p-3">Harga</th>
@@ -414,29 +417,29 @@ export default function AdminProductsPage() {
                       <th className="p-3 text-right">Aksi</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y">
+                  <tbody className="block divide-y divide-border md:table-row-group">
                     {products.map((product) => (
-                      <tr key={product.id} className="hover:bg-slate-50/50">
-                        <td className="p-3">
+                      <tr key={product.id} className="block min-w-0 py-3 md:table-row md:py-0 hover:bg-muted/50">
+                        <td data-label="Produk" className="block min-w-0 break-words before:mb-1 before:block before:text-xs before:font-medium before:text-muted-foreground before:content-[attr(data-label)] md:table-cell md:before:hidden p-3">
                           <div className="flex items-center gap-3">
                             {product.media?.[0] ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
                                 src={product.media[0].mediaUrl}
                                 alt={product.title}
-                                className="w-12 h-12 object-cover rounded border"
+                                className="w-12 h-12 shrink-0 object-cover rounded border"
                               />
                             ) : (
-                              <div className="w-12 h-12 bg-slate-100 rounded border flex items-center justify-center text-[10px] text-slate-400">
+                              <div className="w-12 h-12 shrink-0 bg-muted rounded border flex items-center justify-center text-xs text-muted-foreground">
                                 No img
                               </div>
                             )}
-                            <div>
-                              <p className="font-semibold text-slate-800 line-clamp-1 max-w-[180px]">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-foreground break-words md:max-w-[180px]">
                                 {product.title}
                               </p>
-                              <p className="text-xs text-slate-500">{product.campusName}</p>
-                              <p className="text-[10px] text-slate-400 mt-0.5">
+                              <p className="text-xs text-muted-foreground">{product.campusName}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
                                 {new Date(product.createdAt).toLocaleDateString('id-ID', {
                                   day: '2-digit', month: 'short', year: 'numeric',
                                 })}
@@ -444,44 +447,44 @@ export default function AdminProductsPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="p-3 text-xs">
-                          <p className="font-medium text-slate-700">{product.seller?.name}</p>
-                          <p className="text-slate-400">{product.seller?.email}</p>
+                        <td data-label="Penjual" className="block min-w-0 break-words before:mb-1 before:block before:text-xs before:font-medium before:text-muted-foreground before:content-[attr(data-label)] md:table-cell md:before:hidden p-3 text-xs">
+                          <p className="font-medium text-foreground">{product.seller?.name}</p>
+                          <p className="text-muted-foreground">{product.seller?.email}</p>
                         </td>
-                        <td className="p-3 text-xs font-semibold text-slate-700">
+                        <td data-label="Harga" className="block min-w-0 break-words before:mb-1 before:block before:text-xs before:font-medium before:text-muted-foreground before:content-[attr(data-label)] md:table-cell md:before:hidden p-3 text-xs font-semibold text-foreground">
                           {formatRupiah(product.displayPrice)}
-                          <p className="text-[10px] text-slate-400 font-normal mt-0.5">
+                          <p className="text-xs text-muted-foreground font-normal mt-0.5">
                             Fee: {formatRupiah(product.listingFeePaid ?? 0)}
                           </p>
                         </td>
-                        <td className="p-3">
+                        <td data-label="Status" className="block min-w-0 break-words before:mb-1 before:block before:text-xs before:font-medium before:text-muted-foreground before:content-[attr(data-label)] md:table-cell md:before:hidden p-3">
                           {getStatusBadge(product.status)}
                           {product.status === 'REJECTED' && product.rejectionReason && (
-                            <p className="text-[10px] text-red-600 mt-1 max-w-[170px] italic leading-tight">
+                            <p className="text-xs text-destructive mt-1 max-w-[170px] italic leading-tight">
                               Alasan: {product.rejectionReason}
                             </p>
                           )}
                         </td>
-                        <td className="p-3">
+                        <td data-label="Bukti bayar" className="block min-w-0 break-words before:mb-1 before:block before:text-xs before:font-medium before:text-muted-foreground before:content-[attr(data-label)] md:table-cell md:before:hidden p-3">
                           {product.paymentProofUrl ? (
                             <button
                               onClick={() => setPreviewProof(product.paymentProofUrl)}
-                              className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                              className="flex min-h-11 items-center gap-2 text-sm text-primary hover:text-primary hover:underline"
                             >
                               <Eye size={13} />
                               Lihat Bukti
                             </button>
                           ) : (
-                            <span className="text-[10px] text-slate-400 italic">Tidak ada</span>
+                            <span className="text-xs text-muted-foreground italic">Tidak ada</span>
                           )}
                         </td>
-                        <td className="p-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
+                        <td data-label="Aksi" className="block min-w-0 break-words before:mb-1 before:block before:text-xs before:font-medium before:text-muted-foreground before:content-[attr(data-label)] md:table-cell md:before:hidden p-3 md:text-right">
+                          <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => window.open(`/products/${product.id}`, '_blank')}
-                              className="h-8 w-8 p-0"
+                              className="min-h-11 h-11 w-11 shrink-0 p-0"
                               title="Lihat Produk"
                             >
                               <ExternalLink size={14} />
@@ -494,7 +497,7 @@ export default function AdminProductsPage() {
                                   size="sm"
                                   onClick={() => handleValidatePayment(product.id, 'APPROVE')}
                                   disabled={actionLoading === product.id}
-                                  className="text-xs h-8 text-emerald-700 border-emerald-300 hover:bg-emerald-50 gap-1"
+                                  className="min-h-11 text-sm h-11 text-success border-border hover:bg-success/10 gap-1"
                                 >
                                   {actionLoading === product.id ? (
                                     <Loader2 size={12} className="animate-spin" />
@@ -512,7 +515,7 @@ export default function AdminProductsPage() {
                                     setCustomReason('')
                                   }}
                                   disabled={actionLoading === product.id}
-                                  className="text-xs h-8 text-red-700 border-red-300 hover:bg-red-50 gap-1"
+                                  className="min-h-11 text-sm h-11 text-destructive border-border hover:bg-destructive/10 gap-1"
                                 >
                                   {actionLoading === product.id ? (
                                     <Loader2 size={12} className="animate-spin" />
@@ -530,7 +533,7 @@ export default function AdminProductsPage() {
                                 size="sm"
                                 onClick={() => handleStatusChange(product.id, ProductStatus.BANNED)}
                                 disabled={actionLoading === product.id}
-                                className="text-xs h-8"
+                                className="min-h-11 text-sm h-11"
                               >
                                 {actionLoading === product.id ? (
                                   <Loader2 size={12} className="animate-spin" />
@@ -546,7 +549,7 @@ export default function AdminProductsPage() {
                                 size="sm"
                                 onClick={() => handleStatusChange(product.id, ProductStatus.ACTIVE)}
                                 disabled={actionLoading === product.id}
-                                className="text-xs h-8 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                                className="min-h-11 text-sm h-11 text-success border-border hover:bg-success/10"
                               >
                                 {actionLoading === product.id ? (
                                   <Loader2 size={12} className="animate-spin" />
@@ -562,7 +565,7 @@ export default function AdminProductsPage() {
                                 size="sm"
                                 onClick={() => handleValidatePayment(product.id, 'APPROVE')}
                                 disabled={actionLoading === product.id}
-                                className="text-xs h-8 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                                className="min-h-11 text-sm h-11 text-success border-border hover:bg-success/10"
                               >
                                 Pulihkan &amp; Setujui
                               </Button>
