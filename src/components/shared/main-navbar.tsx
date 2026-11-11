@@ -31,8 +31,8 @@ export function MainNavbar() {
       setUserName(user.name)
     }
 
-    // If logged in, fetch fresh user data to ensure avatar & profile are always up-to-date
-    if (user?.id) {
+    // Hanya fetch jika user login tapi avatar belum ada di session
+    if (user?.id && !user?.avatarUrl) {
       fetch(`/api/users/${user.id}`)
         .then((res) => res.json())
         .then((json) => {
@@ -42,13 +42,6 @@ export function MainNavbar() {
             }
             if (json.data.name) {
               setUserName(json.data.name)
-            }
-            // Sync with session if different
-            if (updateSession && (json.data.avatarUrl !== user.avatarUrl || json.data.name !== user.name)) {
-              updateSession({
-                avatarUrl: json.data.avatarUrl,
-                name: json.data.name,
-              })
             }
           }
         })
@@ -67,7 +60,7 @@ export function MainNavbar() {
 
     window.addEventListener('profile-updated', handleProfileUpdate)
     return () => window.removeEventListener('profile-updated', handleProfileUpdate)
-  }, [user?.id, user?.avatarUrl, user?.name, updateSession])
+  }, [user?.id, user?.avatarUrl, user?.name])
 
   return (
     <header className="border-b bg-white/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">

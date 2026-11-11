@@ -24,7 +24,6 @@ export async function initAnalyticsTable() {
 
 export async function recordVisit(path: string, ip?: string) {
   try {
-    await initAnalyticsTable()
     const id = `vis_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
     const ipHash = ip ? Buffer.from(ip).toString('base64').substring(0, 16) : 'anon'
     await prisma.$executeRawUnsafe(
@@ -33,8 +32,23 @@ export async function recordVisit(path: string, ip?: string) {
       path,
       ipHash
     )
-  } catch (e) {
-    console.error('Error recording visit:', e)
+  } catch (e: any) {
+    // Jika tabel belum ada, buat sekali lalu retry
+    if (e?.message?.includes('does not exist')) {
+      try {
+        await initAnalyticsTable()
+        const id = `vis_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+        const ipHash = ip ? Buffer.from(ip).toString('base64').substring(0, 16) : 'anon'
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO visitor_logs (id, path, ip_hash, created_at) VALUES ($1, $2, $3, NOW())`,
+          id,
+          path,
+          ipHash
+        )
+      } catch (innerError) {
+        console.error('Error in recordVisit retry:', innerError)
+      }
+    }
   }
 }
 

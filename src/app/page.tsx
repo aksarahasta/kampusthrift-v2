@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import { ProductStatus } from '@prisma/client'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 const CATEGORIES = [
   { label: 'Buku Kuliah', value: 'BUKU_KULIAH', icon: BookOpen, color: 'text-blue-600 bg-blue-50 border-blue-200' },
