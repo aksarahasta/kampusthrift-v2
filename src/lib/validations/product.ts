@@ -117,6 +117,7 @@ export const productFilterSchema = z.object({
   isBarter: z.boolean().optional(),
   verifiedStudentOnly: z.boolean().default(false),
   campusName: z.string().max(100).optional(),
+  codZoneId: z.string().cuid('ID zona COD tidak valid').optional(),
   radiusKm: z
     .number()
     .int()

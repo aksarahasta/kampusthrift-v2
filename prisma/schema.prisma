@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -40,6 +41,15 @@ enum OtpType {
   PASSWORD_RESET
 }
 
+enum MarketplaceTransactionStatus {
+  PENDING_SELLER
+  RESERVED
+  DECLINED
+  CANCELLED
+  COMPLETED
+  EXPIRED
+}
+
 model User {
   id                String    @id @default(cuid())
   name              String
@@ -59,6 +69,8 @@ model User {
   reviewsGiven      Review[]  @relation("BuyerReviews")
   reviewsReceived   Review[]  @relation("SellerReviews")
   otpVerifications  OtpVerification[]
+  purchases         MarketplaceTransaction[] @relation("BuyerTransactions")
+  sales             MarketplaceTransaction[] @relation("SellerTransactions")
 
   @@map("users")
 }
@@ -103,6 +115,7 @@ model Product {
   codZone             CodZone         @relation(fields: [codZoneId], references: [id])
   media               ProductMedia[]
   review              Review?
+  transactions        MarketplaceTransaction[]
 
   @@index([sellerId])
   @@index([category])
@@ -134,8 +147,35 @@ model CodZone {
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
   products     Product[]
+  transactions MarketplaceTransaction[]
 
   @@map("cod_zones")
+}
+
+model MarketplaceTransaction {
+  id                 String                       @id @default(cuid())
+  productId          String                       @map("product_id")
+  buyerId            String                       @map("buyer_id")
+  sellerId           String                       @map("seller_id")
+  codZoneId          String                       @map("cod_zone_id")
+  status             MarketplaceTransactionStatus @default(PENDING_SELLER)
+  expiresAt          DateTime?                    @map("expires_at")
+  buyerConfirmedAt   DateTime?                    @map("buyer_confirmed_at")
+  sellerConfirmedAt  DateTime?                    @map("seller_confirmed_at")
+  completedAt        DateTime?                    @map("completed_at")
+  createdAt          DateTime                     @default(now()) @map("created_at")
+  updatedAt          DateTime                     @updatedAt @map("updated_at")
+
+  product Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  buyer   User     @relation("BuyerTransactions", fields: [buyerId], references: [id], onDelete: Restrict)
+  seller  User     @relation("SellerTransactions", fields: [sellerId], references: [id], onDelete: Restrict)
+  codZone CodZone  @relation(fields: [codZoneId], references: [id], onDelete: Restrict)
+
+  @@index([productId, status, createdAt])
+  @@index([buyerId, status, createdAt])
+  @@index([sellerId, status, createdAt])
+  @@index([status, expiresAt])
+  @@map("marketplace_transactions")
 }
 
 model Review {

@@ -36,7 +36,11 @@ Buat file `.env.local`:
 
 ```env
 # Database (Supabase PostgreSQL)
-DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
+# Runtime URL: pooler/transaction connection (port 6543) or the existing app URL.
+DATABASE_URL="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres"
+# Prisma CLI migrations: direct connection, or Supabase session pooler (port 5432).
+# Prisma CLI must receive this from the root .env or the process environment.
+DIRECT_URL="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
 
 # NextAuth.js
 NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
@@ -160,12 +164,13 @@ git push origin main
 1. Buka [vercel.com](https://vercel.com)
 2. Import repository dari GitHub
 3. Configure Environment Variables (copy dari `.env.local`)
-4. Deploy
+3. Deploy
 
 ### 3. Post-Deployment
 
 1. Set `NEXTAUTH_URL` ke domain Vercel (e.g., `https://kampus-thrift.vercel.app`)
-2. Run migration di production database:
+2. Pastikan `DATABASE_URL` dan `DIRECT_URL` di environment Vercel menunjuk ke project Supabase yang sama. `DATABASE_URL` dipakai aplikasi; `DIRECT_URL` dipakai Prisma CLI untuk migrasi. Jangan commit nilai URL/password asli.
+3. Run migration di production database:
    ```bash
    npx prisma migrate deploy
    npm run db:seed

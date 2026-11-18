@@ -46,19 +46,6 @@ interface CodZone {
   description?: string | null
 }
 
-const UNNES_DEFAULT_ZONES: CodZone[] = [
-  { id: 'ft-unnes', campusName: 'Universitas Negeri Semarang (UNNES)', locationName: 'Fakultas Teknik (FT)' },
-  { id: 'fik-unnes', campusName: 'Universitas Negeri Semarang (UNNES)', locationName: 'Fakultas Ilmu Keolahragaan (FIK)' },
-  { id: 'fh-unnes', campusName: 'Universitas Negeri Semarang (UNNES)', locationName: 'Fakultas Hukum (FH)' },
-  { id: 'fisip-unnes', campusName: 'Universitas Negeri Semarang (UNNES)', locationName: 'Fakultas Ilmu Sosial dan Ilmu Politik (FISIP)' },
-  { id: 'fipp-unnes', campusName: 'Universitas Negeri Semarang (UNNES)', locationName: 'Fakultas Ilmu Pendidikan dan Psikologi (FIPP)' },
-  { id: 'fmipa-unnes', campusName: 'Universitas Negeri Semarang (UNNES)', locationName: 'Fakultas Matematika dan Ilmu Pengetahuan Alam (FMIPA)' },
-  { id: 'fbs-unnes', campusName: 'Universitas Negeri Semarang (UNNES)', locationName: 'Fakultas Bahasa dan Seni (FBS)' },
-]
-
-const FALLBACK_CAMPUSES = [
-  'Universitas Negeri Semarang (UNNES)',
-]
 
 export default function NewProductPage() {
   const router = useRouter()
@@ -66,8 +53,8 @@ export default function NewProductPage() {
 
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [codZones, setCodZones] = useState<CodZone[]>(UNNES_DEFAULT_ZONES)
-  const [selectedCampus, setSelectedCampus] = useState('Universitas Negeri Semarang (UNNES)')
+  const [codZones, setCodZones] = useState<CodZone[]>([])
+  const [selectedCampus, setSelectedCampus] = useState('')
 
   // Media files states (minimal 1 Foto & 1 Video)
   const [images, setImages] = useState<string[]>([])
@@ -104,8 +91,8 @@ export default function NewProductPage() {
   } = useForm<CreateProductInput>({
     resolver: zodResolver(createProductSchema),
     defaultValues: {
-      campusName: 'Universitas Negeri Semarang (UNNES)',
-      codZoneId: UNNES_DEFAULT_ZONES[0].id,
+      campusName: '',
+      codZoneId: '',
       conditionPercentage: 85,
       isBarter: false,
     },
@@ -121,14 +108,15 @@ export default function NewProductPage() {
       try {
         const res = await fetch('/api/cod-zones')
         const json = await res.json()
-        if (res.ok && json.data && json.data.length > 0) {
-          // Ambil hanya zona UNNES
-          const unnesData = json.data.filter((z: CodZone) => z.campusName.includes('UNNES'))
-          const finalData = unnesData.length > 0 ? unnesData : UNNES_DEFAULT_ZONES
-          setCodZones(finalData)
-          setSelectedCampus('Universitas Negeri Semarang (UNNES)')
-          setValue('campusName', 'Universitas Negeri Semarang (UNNES)')
-          setValue('codZoneId', finalData[0].id)
+        if (res.ok && Array.isArray(json.data)) {
+          const zones: CodZone[] = json.data.filter((zone: CodZone) => !zone.id.startsWith('unnes-zone-'))
+          setCodZones(zones)
+          const firstZone = zones[0]
+          if (firstZone) {
+            setSelectedCampus(firstZone.campusName)
+            setValue('campusName', firstZone.campusName)
+            setValue('codZoneId', firstZone.id)
+          }
         }
       } catch (err) {
         console.error('Failed to load COD zones', err)
@@ -209,12 +197,7 @@ export default function NewProductPage() {
     }
   }
 
-  // Filter COD zones khusus UNNES
-  const unnesZonesOnly = codZones.filter((z) => z.campusName.includes('UNNES'))
-  const activeZones = unnesZonesOnly.length > 0 ? unnesZonesOnly : UNNES_DEFAULT_ZONES
-
-  const displayCampuses = ['Universitas Negeri Semarang (UNNES)']
-  const filteredCodZones = activeZones
+  const filteredCodZones = codZones
 
   const onSubmit = async (data: CreateProductInput) => {
     if (images.length === 0) {
@@ -663,51 +646,40 @@ export default function NewProductPage() {
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold text-foreground flex min-w-0 flex-wrap items-center gap-1.5">
                   <MapPin size={16} className="text-primary" />
-                  Titik Temu COD Safe Zone Kampus
+                  Titik COD
                 </h4>
 
-                <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="min-w-0 space-y-1">
-                    <Label htmlFor="campusSelect">Pilih Kampus</Label>
-                    <select
-                      id="campusSelect"
-                      value={selectedCampus}
-                      onChange={(e) => {
-                        const newCampus = e.target.value
-                        setSelectedCampus(newCampus)
-                        setValue('campusName', newCampus)
-                        const matchingZone = codZones.find((z) => z.campusName.toLowerCase() === newCampus.toLowerCase())
-                        if (matchingZone) {
-                          setValue('codZoneId', matchingZone.id)
+                <div className="min-w-0 space-y-1">
+                  <Label htmlFor="codZoneId">Pilih titik COD untuk serah-terima</Label>
+                  <select
+                    id="codZoneId"
+                    {...register('codZoneId', {
+                      onChange: (event) => {
+                        const zone = codZones.find((item) => item.id === event.target.value)
+                        if (zone) {
+                          setSelectedCampus(zone.campusName)
+                          setValue('campusName', zone.campusName)
                         }
-                      }}
-                      className="w-full min-w-0 h-11 px-3 rounded-md border border-input bg-background text-sm"
-                    >
-                      {displayCampuses.map((campus) => (
-                        <option key={campus} value={campus}>
-                          {campus}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                    <div className="min-w-0 space-y-1">
-                      <Label htmlFor="codZoneId">Pilih Titik Aman (COD Safe Zone)</Label>
-                      <select
-                        id="codZoneId"
-                        {...register('codZoneId')}
-                        className="w-full min-w-0 h-11 px-3 rounded-md border border-input bg-background text-sm"
-                      >
-                        {(filteredCodZones.length > 0 ? filteredCodZones : UNNES_DEFAULT_ZONES).map((zone) => (
-                          <option key={zone.id} value={zone.id}>
-                            {zone.locationName}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.codZoneId && (
-                        <p className="text-xs text-destructive">{errors.codZoneId.message}</p>
-                      )}
-                    </div>
+                      },
+                    })}
+                    className="h-11 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    disabled={filteredCodZones.length === 0}
+                  >
+                    {filteredCodZones.length === 0 ? (
+                      <option value="">Titik COD belum tersedia</option>
+                    ) : filteredCodZones.map((zone) => (
+                      <option key={zone.id} value={zone.id}>
+                        {zone.locationName} — {zone.campusName}
+                      </option>
+                    ))}
+                  </select>
+                  <input type="hidden" {...register('campusName')} />
+                  {filteredCodZones.length === 0 && (
+                    <p className="text-xs text-destructive">Listing belum dapat dibuat sampai admin mengaktifkan titik COD.</p>
+                  )}
+                  {errors.codZoneId && (
+                    <p className="text-xs text-destructive">{errors.codZoneId.message}</p>
+                  )}
                 </div>
               </div>
 
@@ -715,7 +687,7 @@ export default function NewProductPage() {
               <Button
                 type="submit"
                 className="w-full h-auto min-h-12 whitespace-normal px-4 py-3 text-sm sm:text-base font-semibold mt-4 bg-primary hover:bg-primary/90 shadow-sm"
-                disabled={loading}
+                disabled={loading || filteredCodZones.length === 0}
               >
                 {loading ? (
                   <>

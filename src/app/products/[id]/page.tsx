@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, use } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,6 @@ import {
   MapPin,
   Clock,
   MessageCircle,
-  Phone,
   Share2,
   Heart,
   ArrowLeft,
@@ -32,8 +31,17 @@ import {
   Ban
 } from 'lucide-react'
 import { formatRupiah, generateWhatsAppLink } from '@/lib/utils'
-import { ProductCategory, ProductStatus } from '@prisma/client'
+import { MarketplaceTransactionStatus, ProductCategory, ProductStatus } from '@prisma/client'
 import { toast } from 'sonner'
+
+const transactionStatusLabels: Record<MarketplaceTransactionStatus, string> = {
+  PENDING_SELLER: 'Menunggu jawaban penjual',
+  RESERVED: 'Reservasi aktif',
+  DECLINED: 'Permintaan ditolak',
+  CANCELLED: 'Transaksi dibatalkan',
+  COMPLETED: 'Serah-terima dikonfirmasi',
+  EXPIRED: 'Reservasi kedaluwarsa',
+}
 
 const categoryLabels: Record<ProductCategory, string> = {
   BUKU_KULIAH: 'Buku Kuliah',
@@ -41,6 +49,17 @@ const categoryLabels: Record<ProductCategory, string> = {
   ELEKTRONIK: 'Elektronik',
   FASHION: 'Fashion',
   LAIN_LAIN: 'Lain-lain',
+}
+
+interface MarketplaceTransaction {
+  id: string
+  status: MarketplaceTransactionStatus
+  expiresAt?: string | null
+  buyerConfirmedAt?: string | null
+  sellerConfirmedAt?: string | null
+  createdAt: string
+  buyer: { id: string; name: string; campusName?: string | null; phoneWhatsapp?: string }
+  seller: { id: string; name: string; campusName?: string | null; phoneWhatsapp?: string }
 }
 
 interface Product {
@@ -65,7 +84,7 @@ interface Product {
     honestyScore: number
     campusName?: string | null
     faculty?: string | null
-    phoneWhatsapp: string
+    phoneWhatsapp?: string
   }
   media: Array<{
     id: string
@@ -96,7 +115,7 @@ export default function ProductDetailPage({
 }) {
   const id = params.id
   const router = useRouter()
-  const { data: session } = useSession()
+  const { data: session, status: sessionStatus } = useSession()
 
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
@@ -104,51 +123,119 @@ export default function ProductDetailPage({
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showVideo, setShowVideo] = useState(false)
   const [showReviewModal, setShowReviewModal] = useState(false)
+  const [transactions, setTransactions] = useState<{ mine: MarketplaceTransaction | null; requests: MarketplaceTransaction[] }>({ mine: null, requests: [] })
+  const [transactionLoading, setTransactionLoading] = useState(false)
+  const [transactionAction, setTransactionAction] = useState<string | null>(null)
 
   const images = product?.media.filter((m) => m.mediaType === 'IMAGE') || []
   const video = product?.media.find((m) => m.mediaType === 'VIDEO')
 
+  const refreshProduct = useCallback(async () => {
+    const res = await fetch(`/api/products/${id}`)
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || 'Produk tidak ditemukan')
+    setProduct(json.data)
+  }, [id])
+
+  const refreshTransactions = useCallback(async () => {
+    if (!session?.user?.id) {
+      setTransactions({ mine: null, requests: [] })
+      return
+    }
+    setTransactionLoading(true)
+    try {
+      const res = await fetch(`/api/products/${id}/transactions`)
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Gagal mengambil status transaksi')
+      setTransactions(json.data)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal mengambil status transaksi')
+    } finally {
+      setTransactionLoading(false)
+    }
+  }, [id, session?.user?.id])
+
   useEffect(() => {
+    let cancelled = false
     async function fetchProduct() {
       try {
         setLoading(true)
         const res = await fetch(`/api/products/${id}`)
         const json = await res.json()
-
-        if (!res.ok) {
-          throw new Error(json.error || 'Produk tidak ditemukan')
-        }
-
-        setProduct(json.data)
+        if (!res.ok) throw new Error(json.error || 'Produk tidak ditemukan')
+        if (!cancelled) setProduct(json.data)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Gagal memuat produk')
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Gagal memuat produk')
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
-
     fetchProduct()
+    return () => { cancelled = true }
   }, [id])
 
-  const handleWhatsAppContact = () => {
-    if (!product) return
+  useEffect(() => {
+    if (sessionStatus !== 'loading') refreshTransactions()
+  }, [refreshTransactions, sessionStatus])
 
-    // User must be logged in to buy or contact seller via WhatsApp (Req 3)
+  const requestPurchase = async () => {
+    if (!product) return
     if (!session?.user) {
-      toast.info('Silakan masuk ke akun Anda terlebih dahulu untuk menghubungi penjual dan bertransaksi.')
       router.push(`/login?callbackUrl=${encodeURIComponent(`/products/${product.id}`)}`)
       return
     }
+    setTransactionAction('request')
+    try {
+      const res = await fetch(`/api/products/${product.id}/transactions`, { method: 'POST' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Gagal mengirim permintaan pembelian')
+      toast.success('Permintaan pembelian dikirim ke penjual')
+      await Promise.all([refreshTransactions(), refreshProduct()])
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal mengirim permintaan pembelian')
+    } finally {
+      setTransactionAction(null)
+    }
+  }
 
-    const waLink = generateWhatsAppLink(
-      product.seller.phoneWhatsapp,
-      product.seller.name,
+  const updateTransaction = async (
+    transactionId: string,
+    action: 'accept' | 'decline' | 'cancel' | 'confirm'
+  ) => {
+    setTransactionAction(transactionId)
+    try {
+      const res = await fetch(`/api/transactions/${transactionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Gagal memperbarui transaksi')
+      toast.success(action === 'accept' ? 'Permintaan diterima, barang direservasi selama 24 jam' : 'Status transaksi berhasil diperbarui')
+      await Promise.all([refreshTransactions(), refreshProduct()])
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal memperbarui transaksi')
+      await Promise.all([refreshTransactions(), refreshProduct()])
+    } finally {
+      setTransactionAction(null)
+    }
+  }
+
+  const openTransactionWhatsApp = (transaction: MarketplaceTransaction) => {
+    if (!product || !session?.user) return
+    const contact = transaction.seller.id === session.user.id ? transaction.buyer : transaction.seller
+    if (!contact.phoneWhatsapp) {
+      toast.error('Kontak belum tersedia. Muat ulang halaman atau hubungi admin.')
+      return
+    }
+    const url = generateWhatsAppLink(
+      contact.phoneWhatsapp,
+      contact.name,
       product.title,
       product.displayPrice,
       product.codZone.locationName
     )
-
-    window.open(waLink, '_blank')
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   if (loading) {
@@ -509,16 +596,98 @@ export default function ProductDetailPage({
               </CardContent>
             </Card>
 
-            {/* Desktop WhatsApp Action Button */}
-            {product.status === ProductStatus.ACTIVE && !isOwner && (
-              <Button
-                onClick={handleWhatsAppContact}
-                size="lg"
-                className="hidden lg:flex w-full h-auto min-h-12 whitespace-normal py-3 text-base font-semibold gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
-              >
-                <MessageCircle size={22} />
-                {session?.user ? 'Hubungi Penjual via WhatsApp' : 'Masuk untuk Transaksi via WA'}
-              </Button>
+            {session?.user && (isOwner ? transactions.requests.length > 0 : Boolean(transactions.mine)) && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Permintaan dan status transaksi</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {transactionLoading && (
+                    <p className="text-sm text-muted-foreground">Memuat status transaksi...</p>
+                  )}
+                  {isOwner ? transactions.requests.map((transaction) => (
+                    <div key={transaction.id} className="space-y-3 border-t border-border pt-4 first:border-0 first:pt-0">
+                      <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-foreground">{transaction.buyer.name}</p>
+                          {transaction.buyer.campusName && <p className="text-xs text-muted-foreground">{transaction.buyer.campusName}</p>}
+                        </div>
+                        <Badge variant={transaction.status === MarketplaceTransactionStatus.RESERVED ? 'default' : 'outline'}>
+                          {transactionStatusLabels[transaction.status]}
+                        </Badge>
+                      </div>
+                      {transaction.status === MarketplaceTransactionStatus.PENDING_SELLER && (
+                        <div className="flex flex-wrap gap-2">
+                          <Button onClick={() => updateTransaction(transaction.id, 'accept')} disabled={transactionAction !== null} className="min-h-11">
+                            {transactionAction === transaction.id ? <Loader2 size={16} className="mr-2 animate-spin" /> : <CheckCircle2 size={16} className="mr-2" />}
+                            Terima dan reservasi
+                          </Button>
+                          <Button variant="outline" onClick={() => updateTransaction(transaction.id, 'decline')} disabled={transactionAction !== null} className="min-h-11">
+                            Tolak
+                          </Button>
+                        </div>
+                      )}
+                      {transaction.status === MarketplaceTransactionStatus.RESERVED && (
+                        <div className="space-y-3">
+                          <p className="text-sm text-muted-foreground">
+                            Barang direservasi hingga {transaction.expiresAt ? new Date(transaction.expiresAt).toLocaleString('id-ID') : '24 jam setelah diterima'}. Pembayaran dilakukan langsung kepada penjual saat COD; aplikasi hanya mencatat konfirmasi serah-terima.
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" onClick={() => openTransactionWhatsApp(transaction)} className="min-h-11">
+                              <MessageCircle size={16} className="mr-2" /> Hubungi pembeli
+                            </Button>
+                            {!transaction.sellerConfirmedAt && (
+                              <Button onClick={() => updateTransaction(transaction.id, 'confirm')} disabled={transactionAction !== null} className="min-h-11">
+                                <CheckCircle2 size={16} className="mr-2" /> Konfirmasi pembayaran dan serah-terima
+                              </Button>
+                            )}
+                            <Button variant="ghost" onClick={() => updateTransaction(transaction.id, 'cancel')} disabled={transactionAction !== null} className="min-h-11 text-destructive">
+                              Batalkan reservasi
+                            </Button>
+                          </div>
+                          {transaction.sellerConfirmedAt && <p className="text-xs text-muted-foreground">Konfirmasi Anda sudah tercatat; status menjadi terjual setelah pembeli juga mengonfirmasi.</p>}
+                        </div>
+                      )}
+                    </div>
+                  )) : transactions.mine && (
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-medium text-foreground">{transactionStatusLabels[transactions.mine.status]}</p>
+                        <Badge variant={transactions.mine.status === MarketplaceTransactionStatus.RESERVED ? 'default' : 'outline'}>
+                          {transactions.mine.status === MarketplaceTransactionStatus.RESERVED ? 'Barang direservasi' : transactionStatusLabels[transactions.mine.status]}
+                        </Badge>
+                      </div>
+                      {transactions.mine.status === MarketplaceTransactionStatus.PENDING_SELLER && (
+                        <>
+                          <p className="text-sm text-muted-foreground">Nomor kontak penjual baru tersedia setelah permintaan diterima.</p>
+                          <Button variant="outline" onClick={() => updateTransaction(transactions.mine!.id, 'cancel')} disabled={transactionAction !== null} className="min-h-11">Batalkan permintaan</Button>
+                        </>
+                      )}
+                      {transactions.mine.status === MarketplaceTransactionStatus.RESERVED && (
+                        <div className="space-y-3">
+                          <p className="text-sm text-muted-foreground">
+                            Tentukan waktu bertemu di titik COD. Reservasi berakhir {transactions.mine.expiresAt ? new Date(transactions.mine.expiresAt).toLocaleString('id-ID') : 'dalam 24 jam'}. Pembayaran dilakukan langsung kepada penjual saat bertemu.
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" onClick={() => openTransactionWhatsApp(transactions.mine!)} className="min-h-11">
+                              <MessageCircle size={16} className="mr-2" /> Hubungi penjual
+                            </Button>
+                            {!transactions.mine.buyerConfirmedAt && (
+                              <Button onClick={() => updateTransaction(transactions.mine!.id, 'confirm')} disabled={transactionAction !== null} className="min-h-11">
+                                <CheckCircle2 size={16} className="mr-2" /> Konfirmasi pembayaran dan serah-terima
+                              </Button>
+                            )}
+                            <Button variant="ghost" onClick={() => updateTransaction(transactions.mine!.id, 'cancel')} disabled={transactionAction !== null} className="min-h-11 text-destructive">
+                              Batalkan reservasi
+                            </Button>
+                          </div>
+                          {transactions.mine.buyerConfirmedAt && <p className="text-xs text-muted-foreground">Konfirmasi Anda sudah tercatat; status menjadi terjual setelah penjual juga mengonfirmasi.</p>}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             )}
           </div>
         </div>
@@ -529,24 +698,25 @@ export default function ProductDetailPage({
         <div className="product-action-bar fixed left-0 right-0 bg-card border-t border-border shadow-lg z-40 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <div className="container mx-auto flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-4">
             <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground">Harga Total</p>
-              <p className="text-xl font-bold text-primary">
-                {formatRupiah(product.displayPrice)}
-              </p>
+              <p className="text-xs text-muted-foreground">Harga barang saat COD</p>
+              <p className="text-xl font-bold text-primary">{formatRupiah(product.displayPrice)}</p>
             </div>
             <Button
-              onClick={handleWhatsAppContact}
-              className="min-w-0 flex-1 h-auto min-h-12 whitespace-normal py-3 text-sm sm:text-base gap-2 bg-primary hover:bg-primary/90"
+              onClick={requestPurchase}
+              disabled={transactionAction !== null || transactionLoading || transactions.mine?.status === MarketplaceTransactionStatus.PENDING_SELLER}
+              className="min-w-0 flex-1 h-auto min-h-12 whitespace-normal py-3 text-sm sm:text-base"
             >
-              <MessageCircle size={18} />
-              {session?.user ? 'Hubungi via WhatsApp' : 'Masuk untuk Chat WA'}
+              {transactionAction === 'request' ? <Loader2 size={18} className="mr-2 animate-spin" /> : <MessageCircle size={18} className="mr-2" />}
+              {transactions.mine?.status === MarketplaceTransactionStatus.PENDING_SELLER
+                ? 'Menunggu jawaban penjual'
+                : session?.user ? 'Ajukan pembelian' : 'Masuk untuk mengajukan'}
             </Button>
           </div>
         </div>
       )}
 
       {/* Buyer Review Action if SOLD and no review yet */}
-      {product.status === ProductStatus.SOLD && !isOwner && !product.review && (
+      {product.status === ProductStatus.SOLD && !isOwner && transactions.mine?.status === MarketplaceTransactionStatus.COMPLETED && !product.review && (
         <div className="product-action-bar fixed left-0 right-0 bg-card border-t border-border shadow-lg z-40 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <div className="container mx-auto flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
             <div>
@@ -581,32 +751,15 @@ export default function ProductDetailPage({
       )}
 
       {/* Owner Actions */}
-      {isOwner && (
+      {isOwner && product.status !== ProductStatus.RESERVED && product.status !== ProductStatus.SOLD && (
         <div className="product-action-bar fixed left-0 right-0 bg-card border-t border-border shadow-lg z-40 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-          <div className="container mx-auto flex flex-wrap gap-2 sm:gap-3">
+          <div className="container mx-auto">
             <Button
               variant="outline"
-              className="min-w-0 flex-1 h-auto min-h-12 whitespace-normal px-3 py-2 text-sm"
+              className="min-h-12 w-full whitespace-normal px-3 py-2 text-sm sm:w-auto"
               onClick={() => router.push(`/products/${product.id}/edit`)}
             >
-              Edit Listing
-            </Button>
-            <Button
-              variant="destructive"
-              className="min-w-0 flex-1 h-auto min-h-12 whitespace-normal px-3 py-2 text-sm"
-              onClick={async () => {
-                if (confirm('Tandai barang ini sebagai TERJUAL?')) {
-                  await fetch(`/api/products/${product.id}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: 'SOLD' }),
-                  })
-                  router.refresh()
-                }
-              }}
-            >
-              <CheckCircle2 size={16} className="mr-2" />
-              Tandai Terjual
+              Edit listing
             </Button>
           </div>
         </div>

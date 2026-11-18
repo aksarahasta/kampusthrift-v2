@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { updateProductSchema } from '@/lib/validations/product'
-import { calculateDisplayPrice } from '@/lib/utils'
-import { ProductStatus, Role } from '@prisma/client'
+import { productMediaSchema, updateProductSchema } from '@/lib/validations/product'
+import { MarketplaceTransactionStatus, ProductStatus, Prisma, Role } from '@prisma/client'
+import { expireStaleReservations, runSerializable } from '@/lib/transactions'
+import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,12 +14,12 @@ export const dynamic = 'force-dynamic'
  * Mengambil detail produk berdasarkan ID
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const { id } = params
-
+    await expireStaleReservations()
     const product = await prisma.product.findUnique({
       where: { id, status: { not: ProductStatus.BANNED } },
       include: {
@@ -30,27 +31,12 @@ export async function GET(
             honestyScore: true,
             campusName: true,
             faculty: true,
-            phoneWhatsapp: true,
           },
         },
         media: true,
-        codZone: {
-          select: {
-            campusName: true,
-            locationName: true,
-            description: true,
-          },
-        },
+        codZone: { select: { campusName: true, locationName: true, description: true } },
         review: {
-          include: {
-            buyer: {
-              select: {
-                id: true,
-                name: true,
-                campusName: true,
-              },
-            },
-          },
+          include: { buyer: { select: { id: true, name: true, campusName: true } } },
         },
       },
     })
@@ -62,7 +48,28 @@ export async function GET(
       )
     }
 
-    return NextResponse.json({ data: product })
+    const session = await getServerSession(authOptions)
+    const mayViewSellerContact = session?.user?.id
+      ? await prisma.marketplaceTransaction.findFirst({
+          where: {
+            productId: id,
+            buyerId: session.user.id,
+            status: { in: [MarketplaceTransactionStatus.RESERVED, MarketplaceTransactionStatus.COMPLETED] },
+          },
+          select: { id: true },
+        })
+      : null
+    const seller = mayViewSellerContact
+      ? {
+          ...product.seller,
+          phoneWhatsapp: (await prisma.user.findUnique({
+            where: { id: product.seller.id },
+            select: { phoneWhatsapp: true },
+          }))?.phoneWhatsapp,
+        }
+      : product.seller
+
+    return NextResponse.json({ data: { ...product, seller } })
   } catch (error) {
     console.error('Error fetching product:', error)
     return NextResponse.json(
@@ -72,131 +79,143 @@ export async function GET(
   }
 }
 
-/**
- * PATCH /api/products/[id]
- * Mengupdate produk (status ACTIVE/RESERVED/SOLD, edit data)
- * Hanya penjual yang memiliki produk atau Admin yang dapat mengedit
- */
+/** Updates listing data without bypassing the transaction status flow. */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Anda harus login untuk mengupdate produk' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Anda harus login untuk mengupdate produk' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const validatedData = updateProductSchema.parse(body)
-
-    // Cek apakah produk ada dan user memiliki akses
-    const product = await prisma.product.findUnique({
-      where: { id },
-    })
-
-    if (!product) {
-      return NextResponse.json(
-        { error: 'Produk tidak ditemukan' },
-        { status: 404 }
-      )
+    let body: Record<string, unknown>
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Format JSON tidak valid' }, { status: 400 })
     }
-
-    // Validasi akses: Seller atau Admin
-    const isSeller = product.sellerId === session.user.id
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'Data produk tidak valid' }, { status: 400 })
+    }
+    const result = updateProductSchema.safeParse(body)
+    if (!result.success) {
+      return NextResponse.json({ error: result.error.issues[0]?.message || 'Data produk tidak valid' }, { status: 400 })
+    }
+    const validatedData = result.data
     const isAdmin = session.user.role === Role.ADMIN
-
-    if (!isSeller && !isAdmin) {
-      return NextResponse.json(
-        { error: 'Anda tidak memiliki izin untuk mengupdate produk ini' },
-        { status: 403 }
-      )
+    if (!isAdmin && validatedData.status !== undefined) {
+      return NextResponse.json({ error: 'Status listing hanya dapat diubah melalui alur transaksi atau admin' }, { status: 403 })
     }
 
-    // Jika admin melakukan banned, langsung update tanpa cek lagi
-    if (validatedData.status === ProductStatus.BANNED && isAdmin) {
-      const updatedProduct = await prisma.product.update({
-        where: { id },
-        data: {
-          status: ProductStatus.BANNED,
-          updatedAt: new Date(),
-        },
-      })
-
-      return NextResponse.json({
-        message: 'Produk berhasil dibanned',
-        data: updatedProduct,
-      })
-    }
-
-    // Jika seller mengubah status ke SOLD, validasi hanya boleh dari ACTIVE atau RESERVED
-    if (validatedData.status === ProductStatus.SOLD && isSeller) {
-      if (!(<ProductStatus[]>[ProductStatus.ACTIVE, ProductStatus.RESERVED]).includes(product.status)) {
-        return NextResponse.json(
-          { error: 'Status tidak dapat diubah ke SOLD' },
-          { status: 400 }
-        )
+    let media: z.infer<typeof productMediaSchema>[] | undefined
+    if (body.media !== undefined) {
+      const mediaResult = z.array(productMediaSchema).min(1).max(20).safeParse(body.media)
+      if (!mediaResult.success) {
+        return NextResponse.json({ error: 'Media produk tidak valid' }, { status: 400 })
       }
+      media = mediaResult.data
+    }
+    if (body.paymentProofUrl !== undefined && (typeof body.paymentProofUrl !== 'string' || !z.string().url().safeParse(body.paymentProofUrl).success)) {
+      return NextResponse.json({ error: 'URL bukti pembayaran tidak valid' }, { status: 400 })
     }
 
-    // Update displayPrice if basePrice changed (Model Pay-per-Listing: displayPrice = basePrice)
-    let displayPrice = product.displayPrice
-    if (validatedData.basePrice && validatedData.basePrice !== product.basePrice) {
-      displayPrice = validatedData.basePrice
-    }
+    const updatedProduct = await runSerializable(async (db) => {
+      const product = await db.product.findUnique({ where: { id: params.id } })
+      if (!product) throw new ProductPatchError('Produk tidak ditemukan', 404)
 
-    // Handle media update if provided in body
-    if (Array.isArray(body.media) && body.media.length > 0) {
-      await prisma.productMedia.deleteMany({
-        where: { productId: id },
+      const isSeller = product.sellerId === session.user.id
+      if (!isSeller && !isAdmin) {
+        throw new ProductPatchError('Anda tidak memiliki izin untuk mengupdate produk ini', 403)
+      }
+      if (isSeller && (product.status === ProductStatus.RESERVED || product.status === ProductStatus.SOLD)) {
+        throw new ProductPatchError('Produk yang sedang direservasi atau sudah terjual tidak dapat diedit', 409)
+      }
+
+      const now = new Date()
+      if (isAdmin && validatedData.status === ProductStatus.BANNED) {
+        if (product.status === ProductStatus.RESERVED) {
+          throw new ProductPatchError('Produk yang sedang direservasi tidak dapat dibanned sampai transaksi selesai atau dibatalkan', 409)
+        }
+        return db.product.update({
+          where: { id: product.id },
+          data: { status: ProductStatus.BANNED, updatedAt: now },
+          include: { media: true, codZone: true },
+        })
+      }
+
+      const paymentProofUrl = typeof body.paymentProofUrl === 'string' ? body.paymentProofUrl : undefined
+      if (paymentProofUrl && isSeller && product.status !== ProductStatus.REJECTED) {
+        throw new ProductPatchError('Bukti pembayaran baru hanya dapat dikirim untuk listing yang ditolak', 409)
+      }
+
+      const campusName = validatedData.campusName ?? product.campusName
+      const codZoneId = validatedData.codZoneId ?? product.codZoneId
+      if (validatedData.campusName !== undefined || validatedData.codZoneId !== undefined) {
+        const zone = await db.codZone.findFirst({
+          where: { id: codZoneId, campusName, isActive: true },
+          select: { id: true },
+        })
+        if (!zone) throw new ProductPatchError('Titik COD aktif tidak ditemukan untuk kampus tersebut', 400)
+      }
+
+      const updateData: Prisma.ProductUncheckedUpdateInput = {
+        ...(validatedData.title !== undefined && { title: validatedData.title }),
+        ...(validatedData.description !== undefined && { description: validatedData.description }),
+        ...(validatedData.category !== undefined && { category: validatedData.category }),
+        ...(validatedData.basePrice !== undefined && {
+          basePrice: validatedData.basePrice,
+          displayPrice: validatedData.basePrice,
+        }),
+        ...(validatedData.isBarter !== undefined && { isBarter: validatedData.isBarter }),
+        ...(validatedData.barterTarget !== undefined && { barterTarget: validatedData.barterTarget || null }),
+        ...(validatedData.conditionPercentage !== undefined && { conditionPercentage: validatedData.conditionPercentage }),
+        ...(validatedData.campusName !== undefined && { campusName: validatedData.campusName }),
+        ...(validatedData.codZoneId !== undefined && { codZoneId: validatedData.codZoneId }),
+        ...(isAdmin && validatedData.status !== undefined && { status: validatedData.status }),
+        ...(paymentProofUrl && { paymentProofUrl, status: ProductStatus.PENDING_PAYMENT, rejectionReason: null }),
+        updatedAt: now,
+      }
+
+      if (media) {
+        await db.productMedia.deleteMany({ where: { productId: product.id } })
+        await db.productMedia.createMany({
+          data: media.map((item) => ({
+            productId: product.id,
+            mediaUrl: item.mediaUrl,
+            mediaType: item.mediaType,
+            isPrimary: item.isPrimary,
+          })),
+        })
+      }
+
+      return db.product.update({
+        where: { id: product.id },
+        data: updateData,
+        include: { media: true, codZone: true },
       })
-      await prisma.productMedia.createMany({
-        data: body.media.map((m: any, idx: number) => ({
-          productId: id,
-          mediaUrl: m.mediaUrl,
-          mediaType: m.mediaType,
-          isPrimary: m.isPrimary ?? idx === 0,
-        })),
-      })
-    }
-
-    // Update data
-    const updateData: any = {
-      ...validatedData,
-      displayPrice,
-      updatedAt: new Date(),
-    }
-
-    // Jika seller mengunggah bukti pembayaran baru (misal setelah REJECTED)
-    if (body.paymentProofUrl) {
-      updateData.paymentProofUrl = body.paymentProofUrl
-      updateData.status = ProductStatus.PENDING_PAYMENT
-      updateData.rejectionReason = null
-    }
-
-    const updatedProduct = await prisma.product.update({
-      where: { id },
-      data: updateData,
-      include: {
-        media: true,
-        codZone: true,
-      },
     })
 
     return NextResponse.json({
-      message: 'Produk berhasil diperbarui',
+      message: validatedData.status === ProductStatus.BANNED && isAdmin ? 'Produk berhasil dibanned' : 'Produk berhasil diperbarui',
       data: updatedProduct,
     })
   } catch (error) {
+    if (error instanceof ProductPatchError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+      return NextResponse.json({ error: 'Produk berubah bersamaan, silakan muat ulang' }, { status: 409 })
+    }
     console.error('Error updating product:', error)
-    return NextResponse.json(
-      { error: 'Gagal mengupdate produk' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Gagal mengupdate produk' }, { status: 500 })
+  }
+}
+
+class ProductPatchError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message)
   }
 }
 
@@ -241,25 +260,41 @@ export async function DELETE(
       )
     }
 
-    // Jika seller menghapus produk miliknya sendiri, soft delete
-    if (isSeller) {
-      await prisma.product.update({
-        where: { id },
-        data: { status: ProductStatus.BANNED },
-      })
-    } else {
-      // Admin menghapus produk penjual lain
-      await prisma.product.delete({
-        where: { id },
-      })
+    if (product.status === ProductStatus.RESERVED || (isSeller && product.status === ProductStatus.SOLD)) {
+      return NextResponse.json(
+        { error: product.status === ProductStatus.RESERVED
+          ? 'Produk yang sedang direservasi tidak dapat dihapus sampai transaksi selesai atau dibatalkan'
+          : 'Produk yang sudah terjual tidak dapat dihapus' },
+        { status: 409 }
+      )
+    }
+
+    // Keep transaction history and foreign-key references intact for both roles.
+    const removed = await prisma.product.updateMany({
+      where: {
+        id,
+        ...(isSeller && { sellerId: session.user.id }),
+        status: { not: ProductStatus.RESERVED },
+      },
+      data: { status: ProductStatus.BANNED },
+    })
+    if (removed.count !== 1) {
+      return NextResponse.json(
+        { error: 'Produk berubah atau sedang bertransaksi, silakan muat ulang' },
+        { status: 409 }
+      )
     }
 
     return NextResponse.json({
-      message: isSeller
-        ? 'Produk berhasil dihapus (dibanned)'
-        : 'Produk berhasil dihapus permanen',
+      message: 'Produk berhasil dihapus dari katalog',
     })
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+      return NextResponse.json(
+        { error: 'Produk dengan riwayat transaksi tidak dapat dihapus permanen' },
+        { status: 409 }
+      )
+    }
     console.error('Error deleting product:', error)
     return NextResponse.json(
       { error: 'Gagal menghapus produk' },

@@ -1,21 +1,17 @@
 'use client'
 
 import React, { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { ProductCard } from '@/components/cards/product-card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-
 import {
   Search,
-  Filter,
   MapPin,
   GraduationCap,
   RefreshCw,
   SlidersHorizontal,
-  Loader2,
-  X
+  Loader2
 } from 'lucide-react'
 import { ProductCategory } from '@prisma/client'
 
@@ -28,21 +24,40 @@ const categories: { label: string; value: ProductCategory | 'ALL' }[] = [
   { label: 'Lain-lain', value: 'LAIN_LAIN' },
 ]
 
+interface CodZone {
+  id: string
+  campusName: string
+  locationName: string
+}
+
 function CatalogContent() {
-  const router = useRouter()
   const searchParams = useSearchParams()
 
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState(searchParams.get('search') || '')
   const [category, setCategory] = useState<string>(searchParams.get('category') || 'ALL')
-  const [radiusKm, setRadiusKm] = useState<number>(parseInt(searchParams.get('radiusKm') || '5'))
+  const [codZones, setCodZones] = useState<CodZone[]>([])
+  const [codZoneId, setCodZoneId] = useState(searchParams.get('codZoneId') || '')
   const [isBarter, setIsBarter] = useState<boolean>(searchParams.get('isBarter') === 'true')
   const [verifiedStudentOnly, setVerifiedStudentOnly] = useState<boolean>(
     searchParams.get('verifiedStudentOnly') === 'true'
   )
-  const [campusName, setCampusName] = useState(searchParams.get('campusName') || '')
+
   const [showFilters, setShowFilters] = useState(false)
+
+  useEffect(() => {
+    async function fetchCodZones() {
+      try {
+        const response = await fetch('/api/cod-zones')
+        const json = await response.json()
+        if (response.ok) setCodZones(json.data || [])
+      } catch (error) {
+        console.error('Failed to fetch COD zones:', error)
+      }
+    }
+    fetchCodZones()
+  }, [])
 
   const fetchProducts = async () => {
     setLoading(true)
@@ -50,10 +65,10 @@ function CatalogContent() {
       const params = new URLSearchParams()
       if (search) params.set('search', search)
       if (category !== 'ALL') params.set('category', category)
-      if (radiusKm) params.set('radiusKm', radiusKm.toString())
+
       if (isBarter) params.set('isBarter', 'true')
       if (verifiedStudentOnly) params.set('verifiedStudentOnly', 'true')
-      if (campusName) params.set('campusName', campusName)
+      if (codZoneId) params.set('codZoneId', codZoneId)
 
       const res = await fetch(`/api/products?${params.toString()}`)
       const json = await res.json()
@@ -69,7 +84,7 @@ function CatalogContent() {
 
   useEffect(() => {
     fetchProducts()
-  }, [category, radiusKm, isBarter, verifiedStudentOnly, campusName])
+  }, [category, codZoneId, isBarter, verifiedStudentOnly])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,10 +93,10 @@ function CatalogContent() {
 
   const resetFilters = () => {
     setCategory('ALL')
-    setRadiusKm(5)
+
     setIsBarter(false)
     setVerifiedStudentOnly(false)
-    setCampusName('')
+    setCodZoneId('')
     setSearch('')
   }
 
@@ -150,39 +165,24 @@ function CatalogContent() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                {/* Radius Filter */}
-                <div className="space-y-1">
-                  <label htmlFor="catalog-radius" className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                    <MapPin size={12} />
-                    Radius Kampus: {radiusKm} km
+                <div className="min-w-0 space-y-1">
+                  <label htmlFor="catalog-cod-zone" className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
+                    <MapPin size={14} aria-hidden="true" />
+                    Titik COD
                   </label>
-                  <input
-                    type="range"
-                    id="catalog-radius"
-                    min="1"
-                    max="5"
-                    step="1"
-                    value={radiusKm}
-                    onChange={(e) => setRadiusKm(parseInt(e.target.value))}
-                    className="w-full h-6 cursor-pointer"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>1 km</span>
-                    <span>3 km</span>
-                    <span>5 km</span>
-                  </div>
-                </div>
-
-                {/* Campus Filter */}
-                <div className="space-y-1">
-                  <label htmlFor="catalog-campus" className="text-sm font-medium text-muted-foreground">Nama kampus</label>
-                  <Input
-                    id="catalog-campus"
-                    placeholder="cth. Universitas Indonesia"
-                    value={campusName}
-                    onChange={(e) => setCampusName(e.target.value)}
-                    className="text-sm"
-                  />
+                  <select
+                    id="catalog-cod-zone"
+                    value={codZoneId}
+                    onChange={(event) => setCodZoneId(event.target.value)}
+                    className="h-11 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="">Semua titik COD</option>
+                    {codZones.map((zone) => (
+                      <option key={zone.id} value={zone.id}>
+                        {zone.locationName} — {zone.campusName}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Barter Toggle */}
@@ -234,7 +234,7 @@ function CatalogContent() {
             </div>
             <h2 className="mx-auto font-semibold text-foreground text-xl">Tidak ada produk ditemukan</h2>
             <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto">
-              Coba sesuaikan kata kunci pencarian atau ubah filter radius jarak kampus Anda.
+              Coba sesuaikan kata kunci pencarian atau pilih titik COD yang lain.
             </p>
             <Button onClick={resetFilters} variant="outline" size="sm" className="mt-4">
               Reset Semua Filter

@@ -1,119 +1,88 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { MarketplaceTransactionStatus, Prisma, ProductStatus } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createReviewSchema } from '@/lib/validations/product'
 import { calculateAverageScore } from '@/lib/utils'
-import { ProductStatus } from '@prisma/client'
 
-/**
- * POST /api/reviews
- * Memberikan rating (1-5 bintang) dan ulasan untuk penjual setelah transaksi selesai.
- * Hanya buyer yang membeli produk tersebut dan produk sudah SOLD yang dapat memberikan review.
- */
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Anda harus login untuk memberikan ulasan' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Anda harus login untuk memberikan ulasan' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const validatedData = createReviewSchema.parse(body)
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Format JSON tidak valid' }, { status: 400 })
+    }
+    const parsed = createReviewSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Data ulasan tidak valid' }, { status: 400 })
+    }
+    const input = parsed.data
 
-    // Cek apakah produk valid dan sudah terjual
     const product = await prisma.product.findUnique({
-      where: { id: validatedData.productId },
-      include: { seller: true },
+      where: { id: input.productId },
+      select: { id: true, sellerId: true, status: true },
     })
-
     if (!product) {
-      return NextResponse.json(
-        { error: 'Produk tidak ditemukan' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Produk tidak ditemukan' }, { status: 404 })
     }
-
     if (product.status !== ProductStatus.SOLD) {
-      return NextResponse.json(
-        { error: 'Hanya dapat memberikan ulasan untuk produk yang sudah terjual' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Hanya produk yang telah selesai terjual yang dapat diulas' }, { status: 409 })
     }
 
-    // Cek apakah sudah ada review untuk produk ini
-    const existingReview = await prisma.review.findUnique({
-      where: { productId: validatedData.productId },
-    })
-
-    if (existingReview) {
-      return NextResponse.json(
-        { error: 'Anda sudah memberikan ulasan untuk produk ini' },
-        { status: 400 }
-      )
-    }
-
-    // Cek apakah user adalah buyer yang sah (contoh: sudah ada mekanisme tracking buyer)
-    // Catatan: Implementasi nyata perlu sistem tracking buyer (misal: transaksi dengan buyerId)
-    // Untuk MVP, kita asumsikan buyer adalah user yang sedang login
-
-    const buyerId = session.user.id
-
-    // Buat review
-    const review = await prisma.review.create({
-      data: {
-        productId: validatedData.productId,
+    const completedTransaction = await prisma.marketplaceTransaction.findFirst({
+      where: {
+        productId: product.id,
+        buyerId: session.user.id,
         sellerId: product.sellerId,
-        buyerId,
-        score: validatedData.score,
-        comment: validatedData.comment,
+        status: MarketplaceTransactionStatus.COMPLETED,
       },
-      include: {
-        seller: {
-          select: {
-            id: true,
-            name: true,
-          },
+      select: { id: true },
+    })
+    if (!completedTransaction) {
+      return NextResponse.json({ error: 'Ulasan hanya dapat diberikan oleh pembeli pada transaksi selesai' }, { status: 403 })
+    }
+
+    const review = await prisma.$transaction(async (db) => {
+      const created = await db.review.create({
+        data: {
+          productId: product.id,
+          sellerId: product.sellerId,
+          buyerId: session.user.id,
+          score: input.score,
+          comment: input.comment,
         },
-        buyer: {
-          select: {
-            id: true,
-            name: true,
-          },
+        include: {
+          seller: { select: { id: true, name: true } },
+          buyer: { select: { id: true, name: true } },
         },
-      },
-    })
+      })
+      const sellerReviews = await db.review.findMany({
+        where: { sellerId: product.sellerId },
+        select: { score: true },
+      })
+      await db.user.update({
+        where: { id: product.sellerId },
+        data: { honestyScore: calculateAverageScore(sellerReviews.map((item) => item.score)) },
+      })
+      return created
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable })
 
-    // Ambil semua review penjual untuk kalkulasi ulang honestyScore
-    const allReviews = await prisma.review.findMany({
-      where: { sellerId: product.sellerId },
-    })
-
-    const scores = allReviews.map((r) => r.score)
-    const newHonestyScore = calculateAverageScore(scores)
-
-    // Update honestyScore penjual
-    await prisma.user.update({
-      where: { id: product.sellerId },
-      data: { honestyScore: newHonestyScore },
-    })
-
-    return NextResponse.json(
-      {
-        message: 'Ulasan berhasil dikirim',
-        data: review,
-      },
-      { status: 201 }
-    )
+    return NextResponse.json({ message: 'Ulasan berhasil dikirim', data: review }, { status: 201 })
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json({ error: 'Ulasan untuk produk ini sudah pernah diberikan' }, { status: 409 })
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+      return NextResponse.json({ error: 'Ulasan berubah bersamaan, silakan coba lagi' }, { status: 409 })
+    }
     console.error('Error creating review:', error)
-
-    return NextResponse.json(
-      { error: 'Gagal mengirim ulasan' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Gagal mengirim ulasan' }, { status: 500 })
   }
 }

@@ -61,25 +61,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Jika database gagal/offline, kirim data default langsung
     if (codZones.length === 0) {
-      return NextResponse.json({
-        data: DEFAULT_COD_ZONES.map((z, idx) => ({
-          id: `unnes-zone-${idx + 1}`,
-          ...z,
-        })),
-      })
+      return NextResponse.json({ error: 'Belum ada titik COD aktif untuk kampus ini' }, { status: 503 })
     }
 
     return NextResponse.json({ data: codZones })
   } catch (error) {
     console.error('Error fetching COD zones:', error)
-    // Fallback response agar frontend tidak pernah kosong
-    return NextResponse.json({
-      data: DEFAULT_COD_ZONES.map((z, idx) => ({
-        id: `unnes-zone-${idx + 1}`,
-        ...z,
-      })),
-    })
+    return NextResponse.json({ error: 'Gagal mengambil titik COD' }, { status: 500 })
   }
 }

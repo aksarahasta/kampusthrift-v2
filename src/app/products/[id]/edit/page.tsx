@@ -180,10 +180,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   }, [watchBasePrice])
 
   // Filter COD zones berdasarkan kampus yang dipilih
-  const filteredCodZones = codZones.filter(
-    (z) => !selectedCampus || z.campusName.toLowerCase() === selectedCampus.toLowerCase()
-  )
-  const campuses = Array.from(new Set(codZones.map((z) => z.campusName)))
+  const filteredCodZones = codZones
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'IMAGE' | 'VIDEO') => {
     const file = e.target.files?.[0]
@@ -674,48 +671,37 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold text-foreground flex min-w-0 flex-wrap items-center gap-1.5">
                   <MapPin size={16} className="text-primary" />
-                  Titik Temu COD Safe Zone Kampus
+                  Titik COD
                 </h4>
 
-                <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="min-w-0 space-y-1">
-                    <Label htmlFor="campusSelect">Pilih Kampus</Label>
-                    <select
-                      id="campusSelect"
-                      value={selectedCampus}
-                      onChange={(e) => {
-                        setSelectedCampus(e.target.value)
-                        setValue('campusName', e.target.value)
-                        const firstZone = codZones.find((z) => z.campusName === e.target.value)
-                        if (firstZone) setValue('codZoneId', firstZone.id)
-                      }}
-                      className="w-full min-w-0 h-11 px-3 rounded-md border border-input bg-card text-sm"
-                    >
-                      {campuses.map((campus) => (
-                        <option key={campus} value={campus}>
-                          {campus}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="min-w-0 space-y-1">
-                    <Label htmlFor="codZoneId">Pilih Titik Aman (COD Safe Zone)</Label>
-                    <select
-                      id="codZoneId"
-                      {...register('codZoneId')}
-                      className="w-full min-w-0 h-11 px-3 rounded-md border border-input bg-card text-sm"
-                    >
-                      {filteredCodZones.map((zone) => (
-                        <option key={zone.id} value={zone.id}>
-                          {zone.locationName}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.codZoneId && (
-                      <p className="text-xs text-destructive">{errors.codZoneId.message}</p>
-                    )}
-                  </div>
+                <div className="min-w-0 space-y-1">
+                  <Label htmlFor="codZoneId">Pilih titik COD untuk serah-terima</Label>
+                  <select
+                    id="codZoneId"
+                    {...register('codZoneId', {
+                      onChange: (event) => {
+                        const zone = codZones.find((item) => item.id === event.target.value)
+                        if (zone) {
+                          setSelectedCampus(zone.campusName)
+                          setValue('campusName', zone.campusName)
+                        }
+                      },
+                    })}
+                    className="h-11 w-full min-w-0 rounded-md border border-input bg-card px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    disabled={filteredCodZones.length === 0}
+                  >
+                    {filteredCodZones.length === 0 ? (
+                      <option value="">Titik COD kampus ini tidak tersedia</option>
+                    ) : filteredCodZones.map((zone) => (
+                      <option key={zone.id} value={zone.id}>
+                        {zone.locationName} — {zone.campusName}
+                      </option>
+                    ))}
+                  </select>
+                  <input type="hidden" {...register('campusName')} />
+                  {errors.codZoneId && (
+                    <p className="text-xs text-destructive">{errors.codZoneId.message}</p>
+                  )}
                 </div>
               </div>
 
