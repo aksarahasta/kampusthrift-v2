@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { BrandLogo } from '@/components/shared/brand-logo'
 import { GraduationCap, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react'
 
 export default function RegisterPage() {
@@ -61,8 +62,8 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-4 py-8 sm:py-12">
       <Card className="min-w-0 w-full max-w-md shadow-sm border-border">
         <CardHeader className="min-w-0 p-4 sm:p-6 text-center">
-          <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
-            <span className="text-2xl font-bold text-primary">KT</span>
+          <div className="mb-3 flex justify-center">
+            <BrandLogo className="h-16 w-24 object-contain" />
           </div>
           <CardTitle className="min-w-0 leading-snug [&_svg]:shrink-0 text-xl sm:text-2xl font-bold text-foreground">Daftar Akun Baru</CardTitle>
           <CardDescription className="break-words">

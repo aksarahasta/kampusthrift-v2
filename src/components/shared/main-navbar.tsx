@@ -6,6 +6,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { StudentBadge } from '@/components/shared/student-badge'
+import { BrandLogo } from '@/components/shared/brand-logo'
 import { Shield, PlusCircle, LogOut, ShoppingBag, Star, Menu, X, User } from 'lucide-react'
 import { Role } from '@prisma/client'
 
@@ -61,7 +62,7 @@ export function MainNavbar() {
     <header className="market-navbar">
       <div className="container flex h-full items-center justify-between gap-3">
         <Link href="/" className="market-brand" aria-label="Kampus Thrift, beranda">
-          <div className="market-brand-mark"><span>KT</span></div>
+          <BrandLogo className="h-10 w-14 shrink-0 object-contain" alt="" priority />
           <div className="flex min-w-0 flex-col">
             <span className="market-brand-name">Kampus Thrift</span>
             <span className="hidden text-xs text-muted-foreground sm:block">Preloved sekitar kampus</span>
