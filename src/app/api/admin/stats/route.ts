@@ -190,8 +190,9 @@ export async function GET(request: NextRequest) {
           total: totalCodZones,
         },
         systemConfig: {
-          markupPercentage: systemConfig?.markupPercentage ?? 5.0,
-          fixedFee: systemConfig?.fixedFee ?? 1000,
+          listingFee: currentListingFee,
+          markupPercentage: 0,
+          fixedFee: 0,
         },
       },
     })

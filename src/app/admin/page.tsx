@@ -23,7 +23,8 @@ import {
   Calendar,
   Wallet,
   ArrowUpRight,
-  Receipt
+  Receipt,
+  Tag
 } from 'lucide-react'
 import { Role } from '@prisma/client'
 import { formatRupiah } from '@/lib/utils'
@@ -72,6 +73,7 @@ interface PlatformStats {
     total: number
   }
   systemConfig: {
+    listingFee?: number
     markupPercentage: number
     fixedFee: number
   }
@@ -551,40 +553,42 @@ export default function AdminDashboardPage() {
 
         {/* System Config & COD Zones */}
         <div className="grid md:grid-cols-2 gap-6">
-          {/* System Config */}
+          {/* System Config - Biaya Listing Iklan */}
           <Card>
             <CardHeader className="min-w-0 p-4 sm:p-6">
               <CardTitle className="min-w-0 leading-snug [&_svg]:shrink-0 text-lg flex items-center gap-2">
-                <DollarSign size={20} />
-                Konfigurasi Margin & Fee Platform
+                <Tag size={20} className="text-primary" />
+                Tarif Biaya Pasang Iklan (Listing Fee)
               </CardTitle>
               <CardDescription className="break-words">
-                Formula transparansi: P_display = P_base + (P_base × % + Fixed Fee)
+                Model Pay-per-Listing: Penjual membayar tarif listing di awal sebelum produk tayang di katalog
               </CardDescription>
             </CardHeader>
             <CardContent className="min-w-0 p-4 pt-0 sm:p-6 sm:pt-0 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <p className="text-xs text-primary">Persentase Markup</p>
-                  <p className="text-2xl font-bold text-primary">
-                    {stats.systemConfig.markupPercentage}%
+                <div className="bg-primary/10 p-3.5 rounded-lg border border-primary/20">
+                  <p className="text-xs text-primary font-medium">Tarif Listing Saat Ini</p>
+                  <p className="text-2xl font-bold text-primary mt-1">
+                    {formatRupiah(stats.systemConfig?.listingFee ?? 2000)}
                   </p>
-                  <p className="text-xs text-primary mt-1">dari harga dasar penjual</p>
+                  <p className="text-xs text-primary/80 mt-1">per produk yang dipasang</p>
                 </div>
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <p className="text-xs text-primary">Biaya Tetap (Fixed Fee)</p>
-                  <p className="text-2xl font-bold text-primary">
-                    {formatRupiah(stats.systemConfig.fixedFee)}
+                <div className="bg-muted/50 p-3.5 rounded-lg border border-border">
+                  <p className="text-xs text-muted-foreground font-medium">Model Transaksi Penjual</p>
+                  <p className="text-base font-bold text-foreground mt-1">
+                    0% Markup (Harga Asli)
                   </p>
-                  <p className="text-xs text-primary mt-1">per transaksi sukses</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    100% uang penjualan milik penjual
+                  </p>
                 </div>
               </div>
               <Button
                 onClick={() => router.push('/admin/config')}
-                className="min-h-11 w-full whitespace-normal h-auto py-3 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="min-h-11 w-full whitespace-normal h-auto py-3 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
               >
                 <Settings size={16} className="mr-2" />
-                Ubah Pengaturan Markup
+                Kelola Tarif Biaya Listing
               </Button>
             </CardContent>
           </Card>
