@@ -59,15 +59,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   const [uploadingProof, setUploadingProof] = useState(false)
   const proofInputRef = useRef<HTMLInputElement | null>(null)
 
-  // Price markup calculations state
-  const [priceDetails, setPriceDetails] = useState<{
-    basePrice: number
-    markupAmount: number
-    displayPrice: number
-    markupPercentage: number
-    fixedFee: number
-  } | null>(null)
-
   const isVerifiedStudent = session?.user?.isVerifiedStudent ?? false
 
   const {
@@ -148,36 +139,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       initData()
     }
   }, [id, session, authStatus, reset])
-
-  // Hitung Admin Markup secara real-time saat basePrice berubah
-  useEffect(() => {
-    async function calculateMarkup() {
-      if (!watchBasePrice || watchBasePrice <= 0) {
-        setPriceDetails(null)
-        return
-      }
-
-      try {
-        const res = await fetch('/api/products/calculate-price', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ basePrice: watchBasePrice }),
-        })
-        const json = await res.json()
-        if (res.ok) {
-          setPriceDetails(json.data)
-        }
-      } catch (err) {
-        console.error('Failed to calculate markup', err)
-      }
-    }
-
-    const timer = setTimeout(() => {
-      calculateMarkup()
-    }, 300)
-
-    return () => clearTimeout(timer)
-  }, [watchBasePrice])
 
   // Filter COD zones berdasarkan kampus yang dipilih
   const filteredCodZones = codZones
@@ -518,18 +479,24 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                     Harga yang ditampilkan ke calon pembeli di katalog (tanpa markup tersembunyi).
                   </p>
                   <div className="relative mt-2">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground pointer-events-none">
                       Rp
                     </span>
                     <Input
                       id="basePrice"
-                      type="number"
-                      step="1"
-                      min="100"
-                      placeholder="50000"
-                      {...register('basePrice', { valueAsNumber: true })}
-                      className="pl-10 bg-card font-semibold text-foreground"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="cth. 75.000 / 12.500"
+                      value={watchBasePrice ? Number(watchBasePrice).toLocaleString('id-ID') : ''}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, '')
+                        const val = raw ? parseInt(raw, 10) : 0
+                        setValue('basePrice', val, { shouldValidate: true })
+                      }}
+                      onWheel={(e) => e.currentTarget.blur()}
+                      className="pl-10 bg-card font-semibold text-foreground text-base tracking-wide"
                     />
+                    <input type="hidden" {...register('basePrice', { valueAsNumber: true })} />
                   </div>
                   {errors.basePrice && (
                     <p className="text-xs text-destructive">{errors.basePrice.message}</p>

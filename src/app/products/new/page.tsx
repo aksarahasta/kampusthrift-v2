@@ -568,18 +568,24 @@ export default function NewProductPage() {
                     Harga ini yang akan langsung dibayar pembeli saat transaksi COD tanpa markup terselubung.
                   </p>
                   <div className="relative mt-2">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground pointer-events-none">
                       Rp
                     </span>
                     <Input
                       id="basePrice"
-                      type="number"
-                      step="1"
-                      min="100"
-                      placeholder="cth. 75000 / 12500"
-                      {...register('basePrice', { valueAsNumber: true })}
-                      className="pl-10 bg-card font-semibold text-foreground"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="cth. 75.000 / 12.500"
+                      value={watchBasePrice ? Number(watchBasePrice).toLocaleString('id-ID') : ''}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, '')
+                        const val = raw ? parseInt(raw, 10) : 0
+                        setValue('basePrice', val, { shouldValidate: true })
+                      }}
+                      onWheel={(e) => e.currentTarget.blur()}
+                      className="pl-10 bg-card font-semibold text-foreground text-base tracking-wide"
                     />
+                    <input type="hidden" {...register('basePrice', { valueAsNumber: true })} />
                   </div>
                   {errors.basePrice && (
                     <p className="text-xs text-destructive">{errors.basePrice.message}</p>
