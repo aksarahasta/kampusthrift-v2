@@ -60,7 +60,7 @@ export default async function HomePage() {
           <dl className="home-facts">
             <div>
               <MapPin size={24} aria-hidden="true" />
-              <div><dt>Barter barang</dt><dd>Tukarkan barangmu dengan barang lain.</dd></div>
+              <div><dt>Barter barang</dt><dd>Tukarkan barangmu dengan barang yang kamu butuhkan.</dd></div>
             </div>
             <div>
               <ShieldCheck size={24} aria-hidden="true" />
