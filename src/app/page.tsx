@@ -60,7 +60,7 @@ export default async function HomePage() {
           <dl className="home-facts">
             <div>
               <MapPin size={24} aria-hidden="true" />
-              <div><dt>Radius 1-5 km</dt><dd>Temukan barang di sekitar kampusmu.</dd></div>
+              <div><dt>Barter barang</dt><dd>Tukarkan barangmu dengan barang lain.</dd></div>
             </div>
             <div>
               <ShieldCheck size={24} aria-hidden="true" />
